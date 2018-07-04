@@ -91,7 +91,6 @@ read_results Win32GetFileContents(char *Filename)
                 if(ReadFile(FileHandle, Result.Memory, FileSize32, &BytesRead, 0) &&
                    (FileSize32 == BytesRead))
                 {
-                    // NOTE(casey): File read successfully
                     Result.Size = FileSize32;
                 }
                 else 
@@ -160,29 +159,73 @@ int WinMain(HINSTANCE Instance,
                                      0);
         
         
-        
-        //Result = stbi_write_png("Test.png", 512/4, 512/4, 4, temp_bitmap, 512);
-        
-        
         Win32InitOpenGL(Window);
+        
+        GLuint Texture;
+        glGenTextures(1, &Texture);
+        glBindTexture(GL_TEXTURE_2D, Texture);
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
+        int32 Width, Height, Channels;
+#if 0
+        
+        uint8 *Data = stbi_load("wall.jpg", &Width, &Height, &Channels, 4);
+        if(!Data)
+            InvalidCodePath; 
+#else 
+        read_results Read = Win32GetFileContents("c:/windows/fonts/arialbd.ttf");
+        
+        int32 XOffset, YOffset; 
+        stbtt_fontinfo Font; 
+        stbtt_InitFont(&Font, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0));
+        uint8 *Character = stbtt_GetCodepointBitmap(&Font, 0, stbtt_ScaleForPixelHeight(&Font, 128.0f), 'N', &Width, &Height, &XOffset, &YOffset);
+        
+        uint8 *Data = (uint8 *)VirtualAlloc(0, Width * Height * 4, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE); 
+        
+        uint8 *Source = Character; 
+        uint8 *DestRow = Data;
+        for(int32 Y = 0;
+            Y < Height;
+            ++Y)
+        {
+            uint32 *Dest = (uint32 *)DestRow; 
+            for(int32 X = 0;
+                X < Width;
+                ++X)
+            {
+                uint8 Alpha = *Source++;
+                *Dest++ = ((Alpha << 24)|
+                           (Alpha << 16)|
+                           (Alpha << 8)|
+                           (Alpha << 0));
+            }
+            DestRow += (Width * 4); 
+        }
+        stbtt_FreeBitmap(Character, 0);
+#endif 
+        
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+        
         GLuint QuadVAO;
         GLuint VBO;
-#if 0
-        0 {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-        1 {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        2 {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        3 {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-#endif 
         
         vertex Vertices[] = { 
             // Pos      // Tex
-            {-0.5f, 0.5f, 0.0f, 0.0f, 0.0f},
-            {0.5f, -0.5f, 0.0f, 1.0f, 1.0f},
-            {-0.5f, -0.5f, 0.0f, 1.0f, 0.0f}, 
+            {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+            {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, 
             
-            {-0.5f, 0.5f, 0.0f, 0.0f, 0.0f},
-            {0.5f, 0.5f, 0.0f, 1.0f, 0.0f},
-            {0.5f, -0.5f, 0.0f, 1.0f, 1.0f}
+            {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+            {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+            {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
         };
         
         glGenVertexArrays(1, &QuadVAO);
@@ -200,8 +243,8 @@ int WinMain(HINSTANCE Instance,
         glBindBuffer(GL_ARRAY_BUFFER, 0);  
         glBindVertexArray(QuadVAO);
         
-        read_results VertexShaderCode = Win32GetFileContents("..\\project\\code\\vertex_shader.glsl");
-        read_results FragShaderCode = Win32GetFileContents("..\\project\\code\\frag_shader.glsl"); 
+        read_results VertexShaderCode = Win32GetFileContents("..\\code\\vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
+        read_results FragShaderCode = Win32GetFileContents("..\\code\\frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
         GLuint ShaderProgram = glCreateProgram();
         GLuint VertexShaderObj = glCreateShader(GL_VERTEX_SHADER);
         GLuint FragShaderObj = glCreateShader(GL_FRAGMENT_SHADER);
@@ -249,9 +292,12 @@ int WinMain(HINSTANCE Instance,
         
         glUseProgram(ShaderProgram);
         
-        //GLuint ScaleLocation = glGetUniformLocation(ShaderProgram, "Scale");
         
         GLuint WorldLocation = glGetUniformLocation(ShaderProgram, "World");
+        GLuint ProjectionLocation = glGetUniformLocation(ShaderProgram, "Projection");
+        
+        m4 Ortho;
+        gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
         
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, Running, 60))
@@ -266,20 +312,22 @@ int WinMain(HINSTANCE Instance,
             glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            static float Scale = 0.0f;
-            Scale += 0.001f;
+            static float Scale = 100.0f;
+            //Scale += 0.1f;
+            
+            static float Move = 0.0f; 
+            Move += 0.1f; 
             
             m4 World; 
             gb_mat4_identity(&World);
-            //World.x.x = gb_sin(Scale);
-            //World.y.y = gb_sin(Scale);
-            //World.z.z = gb_sin(Scale);
-            //World.w.w = gb_cos(Scale);
-            
-            //gb_mat4_identity(&World);
-            //gb_mat4_rotate(&World, {0.0f, 0.0f, 1.0f}, Scale);
+            gb_mat4_translate(&World, {ScreenWidth/2, ScreenHeight/2, 0.0f});
+            //gb_mat4_translate(&World, {200 + Move, 200 + Move, 0.0f});
+            m4 ScaleM;
+            gb_mat4_scale(&ScaleM, {-Scale, -Scale, 0.0f});
+            World = World * ScaleM; 
             
             glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
+            glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
             
             glDrawArrays(GL_TRIANGLES, 0, 6);
             
