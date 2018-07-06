@@ -58,7 +58,7 @@ typedef double real64;
 
 #include "win32_opengl.h"
 
-#include <stdio.h>
+#include "memory.cpp"
 
 struct vertex
 {
@@ -105,6 +105,66 @@ read_results Win32GetFileContents(char *Filename)
     return Result; 
 }
 
+struct character_asset
+{
+    char Codepoint;
+    int32 Width;
+    int32 Height;
+    int32 XOffset; 
+    int32 YOffset; 
+    uint8 *Data;
+};
+
+struct font_asset
+{
+    int Count = 94;
+    character_asset *Character;
+};
+
+void GetFont(memory_arena *Arena, font_asset *FontAsset) 
+{
+    read_results Read = Win32GetFileContents("c:/windows/fonts/arialbd.ttf");
+    
+    stbtt_fontinfo Font; 
+    stbtt_InitFont(&Font, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0));
+    
+    FontAsset->Character = (character_asset *)PushArray(Arena, 93, character_asset);
+    for(int Index = 33; 
+        Index < 127;
+        ++Index)
+    {
+        int32 XOffset, YOffset; 
+        int32 Width, Height;
+        uint8 *Character = stbtt_GetCodepointBitmap(&Font, 0, stbtt_ScaleForPixelHeight(&Font, 128.0f), Index, &Width, &Height, &XOffset, &YOffset);
+        
+        
+        uint8 *Data = (uint8 *)PushArray(Arena, Width * Height * 4, uint8); 
+        
+        FontAsset->Character[Index - 33] = {(char)Index, Width, Height, XOffset, YOffset, Data};
+        
+        uint8 *Source = Character; 
+        uint8 *DestRow = Data + ((Width * Height * 4) - 1);
+        for(int32 Y = 0;
+            Y < Height;
+            ++Y)
+        {
+            uint32 *Dest = (uint32 *)DestRow; 
+            for(int32 X = 0;
+                X < Width;
+                ++X)
+            {
+                uint8 Alpha = *Source++;
+                *Dest-- = ((Alpha << 24)|
+                           (Alpha << 16)|
+                           (Alpha << 8)|
+                           (Alpha << 0));
+            }
+            DestRow -= (Width * 4); 
+        }
+        stbtt_FreeBitmap(Character, 0);
+    }
+}
+
 LRESULT CALLBACK
 MainWindowProc(HWND Window,
                UINT Message,
@@ -132,6 +192,7 @@ MainWindowProc(HWND Window,
     return Result; 
 }
 
+
 int WinMain(HINSTANCE Instance, 
             HINSTANCE PrevInstance,
             LPSTR CmdLine,
@@ -158,6 +219,9 @@ int WinMain(HINSTANCE Instance,
                                      Instance,
                                      0);
         
+        memory_arena WorldArena; 
+        InitMemoryArena(&WorldArena, Gigabyte(1));
+        memory_arena FontArena = PushArena(&WorldArena, Megabyte(16));
         
         Win32InitOpenGL(Window);
         
@@ -170,43 +234,16 @@ int WinMain(HINSTANCE Instance,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         
-        int32 Width, Height, Channels;
-#if 0
         
-        uint8 *Data = stbi_load("wall.jpg", &Width, &Height, &Channels, 4);
-        if(!Data)
-            InvalidCodePath; 
-#else 
-        read_results Read = Win32GetFileContents("c:/windows/fonts/arialbd.ttf");
         
-        int32 XOffset, YOffset; 
-        stbtt_fontinfo Font; 
-        stbtt_InitFont(&Font, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0));
-        uint8 *Character = stbtt_GetCodepointBitmap(&Font, 0, stbtt_ScaleForPixelHeight(&Font, 128.0f), 'N', &Width, &Height, &XOffset, &YOffset);
+        font_asset Font;
+        GetFont(&FontArena, &Font);
         
-        uint8 *Data = (uint8 *)VirtualAlloc(0, Width * Height * 4, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE); 
+        character_asset Character = Font.Character['N' - 33];
         
-        uint8 *Source = Character; 
-        uint8 *DestRow = Data;
-        for(int32 Y = 0;
-            Y < Height;
-            ++Y)
-        {
-            uint32 *Dest = (uint32 *)DestRow; 
-            for(int32 X = 0;
-                X < Width;
-                ++X)
-            {
-                uint8 Alpha = *Source++;
-                *Dest++ = ((Alpha << 24)|
-                           (Alpha << 16)|
-                           (Alpha << 8)|
-                           (Alpha << 0));
-            }
-            DestRow += (Width * 4); 
-        }
-        stbtt_FreeBitmap(Character, 0);
-#endif 
+        uint8 *Data = Character.Data; 
+        int32 Width = Character.Width;
+        int32 Height = Character.Height; 
         
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);
         glGenerateMipmap(GL_TEXTURE_2D);
