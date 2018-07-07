@@ -117,7 +117,7 @@ struct character_asset
 
 struct font_asset
 {
-    int Count = 94;
+    int Count;
     character_asset *Character;
 };
 
@@ -128,11 +128,13 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     stbtt_fontinfo Font; 
     stbtt_InitFont(&Font, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0));
     
-    FontAsset->Character = (character_asset *)PushArray(Arena, 93, character_asset);
-    for(int Index = 33; 
-        Index < 127;
+    FontAsset->Character = (character_asset *)PushArray(Arena, '~' - '!' + 1, character_asset);
+    for(int Index = '!'; 
+        Index <= '~';
         ++Index)
     {
+        FontAsset->Count += 1; 
+        
         int32 XOffset, YOffset; 
         int32 Width, Height;
         uint8 *Character = stbtt_GetCodepointBitmap(&Font, 0, stbtt_ScaleForPixelHeight(&Font, 128.0f), Index, &Width, &Height, &XOffset, &YOffset);
@@ -140,7 +142,7 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         
         uint8 *Data = (uint8 *)PushArray(Arena, Width * Height * 4, uint8); 
         
-        FontAsset->Character[Index - 33] = {(char)Index, Width, Height, XOffset, YOffset, Data};
+        FontAsset->Character[Index - '!'] = {(char)Index, Width, Height, XOffset, YOffset, Data};
         
         uint8 *Source = Character; 
         uint8 *DestRow = Data + ((Width * Height * 4) - 1);
@@ -163,6 +165,11 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         }
         stbtt_FreeBitmap(Character, 0);
     }
+}
+
+character_asset GetCharacter(font_asset *Font, char Character)
+{
+    return Font->Character[Character - '!']; //33
 }
 
 LRESULT CALLBACK
@@ -239,7 +246,7 @@ int WinMain(HINSTANCE Instance,
         font_asset Font;
         GetFont(&FontArena, &Font);
         
-        character_asset Character = Font.Character['N' - 33];
+        character_asset Character = GetCharacter(&Font, 'N');
         
         uint8 *Data = Character.Data; 
         int32 Width = Character.Width;
@@ -349,15 +356,15 @@ int WinMain(HINSTANCE Instance,
             glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            static float Scale = 100.0f;
+            static float Scale = 10.0f;
             //Scale += 0.1f;
             
             static float Move = 0.0f; 
-            Move += 0.1f; 
+            //Move += 0.5f; 
             
             m4 World; 
             gb_mat4_identity(&World);
-            gb_mat4_translate(&World, {ScreenWidth/2, ScreenHeight/2, 0.0f});
+            gb_mat4_translate(&World, {ScreenWidth/2 + Move, ScreenHeight/2 + Move, 0.0f});
             //gb_mat4_translate(&World, {200 + Move, 200 + Move, 0.0f});
             m4 ScaleM;
             gb_mat4_scale(&ScaleM, {-Scale, -Scale, 0.0f});
