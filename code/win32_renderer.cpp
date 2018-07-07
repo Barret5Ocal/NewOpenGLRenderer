@@ -145,7 +145,8 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         FontAsset->Character[Index - '!'] = {(char)Index, Width, Height, XOffset, YOffset, Data};
         
         uint8 *Source = Character; 
-        uint8 *DestRow = Data + ((Width * Height * 4) - 1);
+        //uint8 *DestRow = Data + ((Width * Height * 4) - 1);
+        uint8 *DestRow = Data;
         for(int32 Y = 0;
             Y < Height;
             ++Y)
@@ -156,12 +157,12 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
                 ++X)
             {
                 uint8 Alpha = *Source++;
-                *Dest-- = ((Alpha << 24)|
+                *Dest++ = ((Alpha << 24)|
                            (Alpha << 16)|
                            (Alpha << 8)|
                            (Alpha << 0));
             }
-            DestRow -= (Width * 4); 
+            DestRow += (Width * 4); 
         }
         stbtt_FreeBitmap(Character, 0);
     }
@@ -170,6 +171,101 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
 character_asset GetCharacter(font_asset *Font, char Character)
 {
     return Font->Character[Character - '!']; //33
+}
+
+void DrawCharacter(GLuint ShaderProgram, character_asset *Character, v2 Position, v2 Scale)
+{
+    
+    GLuint WorldLocation = glGetUniformLocation(ShaderProgram, "World");
+    GLuint ProjectionLocation = glGetUniformLocation(ShaderProgram, "Projection");
+    
+    m4 Ortho;
+    gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
+    
+    m4 World; 
+    gb_mat4_identity(&World);
+    gb_mat4_translate(&World, {Character->Width + Position.x, Character->Height + Position.y, 0.0f});
+    m4 ScaleM;
+    gb_mat4_scale(&ScaleM, {Scale.x, Scale.y, 0.0f});
+    World = World * ScaleM; 
+    
+    glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
+    glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
+    
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    
+}
+
+void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text)
+{
+    real32 AtX = 200, AtY = 200; 
+    GLuint Texture;
+    
+    GLuint QuadVAO;
+    GLuint VBO;
+    
+    vertex Vertices[] = { 
+        // Pos      // Tex
+        {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+        {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, 
+        
+        {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+        {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
+    };
+    
+    glGenVertexArrays(1, &QuadVAO);
+    glGenBuffers(1, &VBO);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+    
+    glBindVertexArray(QuadVAO);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);  
+    glBindVertexArray(QuadVAO);
+    
+    
+    glGenTextures(1, &Texture);
+    glBindTexture(GL_TEXTURE_2D, Texture);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRROR_CLAMP_TO_EDGE );
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRROR_CLAMP_TO_EDGE );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+    
+    for(char *Char = Text;
+        *Char;
+        Char++)
+    {
+        character_asset CharData = GetCharacter(Font, *Char);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CharData.Width, CharData.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, CharData.Data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        
+        v2 Scale = {(float)CharData.Width,(float)CharData.Height};
+        //gb_vec2_norm(&Scale, Scale);
+        DrawCharacter(ShaderProgram, &CharData, {AtX, AtY}, Scale);
+        
+        // NOTE(Barret5Ocal): Character Width and Height is not the same as screen width and height. I need to translate the value
+        AtX += CharData.Width + 128.0f;
+    }
+    
+    
+    glDeleteTextures(1, &Texture);
+    glDeleteVertexArrays(1, &QuadVAO);
+    glDeleteBuffers(1, &VBO);
 }
 
 LRESULT CALLBACK
@@ -232,60 +328,9 @@ int WinMain(HINSTANCE Instance,
         
         Win32InitOpenGL(Window);
         
-        GLuint Texture;
-        glGenTextures(1, &Texture);
-        glBindTexture(GL_TEXTURE_2D, Texture);
-        
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        
-        
         
         font_asset Font;
         GetFont(&FontArena, &Font);
-        
-        character_asset Character = GetCharacter(&Font, 'N');
-        
-        uint8 *Data = Character.Data; 
-        int32 Width = Character.Width;
-        int32 Height = Character.Height; 
-        
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
-        
-        GLuint QuadVAO;
-        GLuint VBO;
-        
-        vertex Vertices[] = { 
-            // Pos      // Tex
-            {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-            {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, 
-            
-            {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-            {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-            {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
-        };
-        
-        glGenVertexArrays(1, &QuadVAO);
-        glGenBuffers(1, &VBO);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
-        
-        glBindVertexArray(QuadVAO);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-        
-        glBindBuffer(GL_ARRAY_BUFFER, 0);  
-        glBindVertexArray(QuadVAO);
         
         read_results VertexShaderCode = Win32GetFileContents("..\\code\\vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
         read_results FragShaderCode = Win32GetFileContents("..\\code\\frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
@@ -337,12 +382,6 @@ int WinMain(HINSTANCE Instance,
         glUseProgram(ShaderProgram);
         
         
-        GLuint WorldLocation = glGetUniformLocation(ShaderProgram, "World");
-        GLuint ProjectionLocation = glGetUniformLocation(ShaderProgram, "Projection");
-        
-        m4 Ortho;
-        gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
-        
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, Running, 60))
         {
@@ -356,24 +395,7 @@ int WinMain(HINSTANCE Instance,
             glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            static float Scale = 10.0f;
-            //Scale += 0.1f;
-            
-            static float Move = 0.0f; 
-            //Move += 0.5f; 
-            
-            m4 World; 
-            gb_mat4_identity(&World);
-            gb_mat4_translate(&World, {ScreenWidth/2 + Move, ScreenHeight/2 + Move, 0.0f});
-            //gb_mat4_translate(&World, {200 + Move, 200 + Move, 0.0f});
-            m4 ScaleM;
-            gb_mat4_scale(&ScaleM, {-Scale, -Scale, 0.0f});
-            World = World * ScaleM; 
-            
-            glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
-            glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
-            
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+            DrawString(ShaderProgram, &Font, "Hello");
             
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
         }

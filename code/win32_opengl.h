@@ -12,6 +12,8 @@ void *GetAnyGLFuncAddress(const char *name);
 #define GL_BGR                            0x80E0
 #define GL_TEXTURE0                       0x84C0
 #define GL_CLAMP_TO_EDGE                  0x812F
+#define GL_CLAMP_TO_BORDER                0x812D
+#define GL_MIRROR_CLAMP_TO_EDGE           0x8743
 
 #include <stddef.h>
 typedef ptrdiff_t GLsizeiptr;
@@ -50,6 +52,8 @@ typedef void (APIENTRYP PFNGLUNIFORM1FPROC) (GLint location, GLfloat v0);
 typedef void (APIENTRYP PFNGLGETPROGRAMINFOLOGPROC) (GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
 typedef void (APIENTRYP PFNGLDRAWARRAYSINSTANCEDPROC) (GLenum mode, GLint first, GLsizei count, GLsizei instancecount);
 typedef void (APIENTRYP PFNGLVERTEXATTRIBDIVISORPROC) (GLuint index, GLuint divisor);
+typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSPROC) (GLsizei n, const GLuint *arrays);
+typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
 
 PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
 PFNGLBINDVERTEXARRAYPROC glBindVertexArray; 
@@ -82,6 +86,8 @@ PFNGLUNIFORM1FPROC glUniform1f;
 PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
 PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced;
 PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor;
+PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
+PFNGLDELETEBUFFERSPROC glDeleteBuffers;
 
 void GetGLPointers()
 {
@@ -116,6 +122,8 @@ void GetGLPointers()
     glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC) GetAnyGLFuncAddress("glGetProgramInfoLog");
     glDrawArraysInstanced = (PFNGLDRAWARRAYSINSTANCEDPROC)GetAnyGLFuncAddress("glDrawArraysInstanced");
     glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)GetAnyGLFuncAddress("glVertexAttribDivisor");
+    glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYSPROC) GetAnyGLFuncAddress("glDeleteVertexArrays");
+    glDeleteBuffers = (PFNGLDELETEBUFFERSPROC ) GetAnyGLFuncAddress("glDeleteBuffers");
     
 }
 
