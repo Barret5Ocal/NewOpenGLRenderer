@@ -187,7 +187,7 @@ void DrawCharacter(GLuint ShaderProgram, character_asset *Character, v2 Position
     gb_mat4_translate(&World, {Character->Width + Position.x, Character->Height + Position.y, 0.0f});
     m4 ScaleM;
     gb_mat4_scale(&ScaleM, {Scale.x, Scale.y, 0.0f});
-    World = World * ScaleM; 
+    World = World * ScaleM;
     
     glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
     glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
