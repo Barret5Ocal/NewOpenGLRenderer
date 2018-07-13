@@ -192,15 +192,15 @@ void DrawCharacter(GLuint ShaderProgram, character_asset *Character, v2 Position
     glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
     glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
     
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     
     glDrawArrays(GL_TRIANGLES, 0, 6);
     
 }
 
-void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text)
+void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
 {
-    real32 AtX = 200, AtY = 200; 
+    real32 AtX = Baseline.x, AtY = Baseline.y; 
     GLuint Texture;
     
     GLuint QuadVAO;
@@ -256,10 +256,10 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text)
         
         v2 Scale = {(float)CharData.Width,(float)CharData.Height};
         //gb_vec2_norm(&Scale, Scale);
-        DrawCharacter(ShaderProgram, &CharData, {AtX, AtY}, Scale);
+        DrawCharacter(ShaderProgram, &CharData, {AtX+CharData.XOffset, AtY+CharData.YOffset}, Scale);
         
-        // NOTE(Barret5Ocal): Character Width and Height is not the same as screen width and height. I need to translate the value
-        AtX += CharData.Width + 128.0f;
+        // TODO(Barret5Ocal): Character Width and Height is pixel space. might need to adjust for scaling 
+        AtX += CharData.Width;
     }
     
     
@@ -395,7 +395,7 @@ int WinMain(HINSTANCE Instance,
             glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Hello");
+            DrawString(ShaderProgram, &Font, "Hello", {400.0f, 400.0f});
             
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
         }
