@@ -121,12 +121,16 @@ struct font_asset
     character_asset *Character;
 };
 
+real32 test; 
+
 void GetFont(memory_arena *Arena, font_asset *FontAsset) 
 {
     read_results Read = Win32GetFileContents("c:/windows/fonts/arialbd.ttf");
     
     stbtt_fontinfo Font; 
     stbtt_InitFont(&Font, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0));
+    
+    test = stbtt_ScaleForPixelHeight(&Font, 128.0f);
     
     FontAsset->Character = (character_asset *)PushArray(Arena, '~' - '!' + 1, character_asset);
     for(int Index = '!'; 
@@ -173,7 +177,7 @@ character_asset GetCharacter(font_asset *Font, char Character)
     return Font->Character[Character - '!']; //33
 }
 
-void DrawCharacter(GLuint ShaderProgram, character_asset *Character, v2 Position, v2 Scale)
+void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
 {
     
     GLuint WorldLocation = glGetUniformLocation(ShaderProgram, "World");
@@ -184,7 +188,7 @@ void DrawCharacter(GLuint ShaderProgram, character_asset *Character, v2 Position
     
     m4 World; 
     gb_mat4_identity(&World);
-    gb_mat4_translate(&World, {Character->Width + Position.x, Character->Height + Position.y, 0.0f});
+    gb_mat4_translate(&World, {Position.x, Position.y, 0.0f});
     m4 ScaleM;
     gb_mat4_scale(&ScaleM, {Scale.x, Scale.y, 0.0f});
     World = World * ScaleM;
@@ -192,7 +196,7 @@ void DrawCharacter(GLuint ShaderProgram, character_asset *Character, v2 Position
     glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
     glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
     
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     
     glDrawArrays(GL_TRIANGLES, 0, 6);
     
@@ -200,7 +204,12 @@ void DrawCharacter(GLuint ShaderProgram, character_asset *Character, v2 Position
 
 void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
 {
-    real32 AtX = Baseline.x, AtY = Baseline.y; 
+    real32 AtX = 67.0f;
+    real32 AtY = 128.0f;
+    
+    //real32 AtX = 0.0f;
+    //real32 AtY = 0.0f;
+    
     GLuint Texture;
     
     GLuint QuadVAO;
@@ -238,8 +247,6 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRROR_CLAMP_TO_EDGE );
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRROR_CLAMP_TO_EDGE );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
@@ -256,7 +263,8 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         
         v2 Scale = {(float)CharData.Width,(float)CharData.Height};
         //gb_vec2_norm(&Scale, Scale);
-        DrawCharacter(ShaderProgram, &CharData, {AtX+CharData.XOffset, AtY+CharData.YOffset}, Scale);
+        
+        DrawCharacter(ShaderProgram, {AtX, AtY}, Scale);
         
         // TODO(Barret5Ocal): Character Width and Height is pixel space. might need to adjust for scaling 
         AtX += CharData.Width;
@@ -328,7 +336,6 @@ int WinMain(HINSTANCE Instance,
         
         Win32InitOpenGL(Window);
         
-        
         font_asset Font;
         GetFont(&FontArena, &Font);
         
@@ -393,9 +400,10 @@ int WinMain(HINSTANCE Instance,
             }
             
             glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
+            //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Hello", {400.0f, 400.0f});
+            DrawString(ShaderProgram, &Font, "Spoon", {400.0f, 400.0f});
             
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
         }
