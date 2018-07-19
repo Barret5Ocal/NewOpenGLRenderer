@@ -119,9 +119,13 @@ struct font_asset
 {
     int Count;
     character_asset *Character;
+    float scale;
+    int ascent; 
+    int descent; 
+    int lineGap;
+    int baseline;
 };
 
-real32 test; 
 
 void GetFont(memory_arena *Arena, font_asset *FontAsset) 
 {
@@ -130,7 +134,15 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     stbtt_fontinfo Font; 
     stbtt_InitFont(&Font, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0));
     
-    test = stbtt_ScaleForPixelHeight(&Font, 128.0f);
+    int ascent; int descent; int lineGap;
+    stbtt_GetFontVMetrics(&Font, &ascent, &descent, &lineGap);
+    float scale = stbtt_ScaleForPixelHeight(&Font, 128.0f);
+    int baseline = (int) (ascent*scale);
+    FontAsset->ascent = ascent;
+    FontAsset->descent = descent;
+    FontAsset->lineGap = lineGap;
+    FontAsset->baseline = baseline;
+    FontAsset->scale = scale; 
     
     FontAsset->Character = (character_asset *)PushArray(Arena, '~' - '!' + 1, character_asset);
     for(int Index = '!'; 
@@ -141,7 +153,7 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         
         int32 XOffset, YOffset; 
         int32 Width, Height;
-        uint8 *Character = stbtt_GetCodepointBitmap(&Font, 0, stbtt_ScaleForPixelHeight(&Font, 128.0f), Index, &Width, &Height, &XOffset, &YOffset);
+        uint8 *Character = stbtt_GetCodepointBitmap(&Font, 0, scale , Index, &Width, &Height, &XOffset, &YOffset);
         
         
         uint8 *Data = (uint8 *)PushArray(Arena, Width * Height * 4, uint8); 
@@ -149,7 +161,6 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         FontAsset->Character[Index - '!'] = {(char)Index, Width, Height, XOffset, YOffset, Data};
         
         uint8 *Source = Character; 
-        //uint8 *DestRow = Data + ((Width * Height * 4) - 1);
         uint8 *DestRow = Data;
         for(int32 Y = 0;
             Y < Height;
@@ -170,6 +181,7 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         }
         stbtt_FreeBitmap(Character, 0);
     }
+    
 }
 
 character_asset GetCharacter(font_asset *Font, char Character)
@@ -263,13 +275,18 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         
         v2 Scale = {(float)CharData.Width,(float)CharData.Height};
         //gb_vec2_norm(&Scale, Scale);
+        //v2 Offset = {(float)CharData.XOffset, (float)CharData.YOffset};
+        //gb_vec2_norm(&Offset, Offset);
         
-        DrawCharacter(ShaderProgram, {AtX, AtY}, Scale);
+        float CharScale = 0.5f;
+        float ScaleH = CharScale * CharData.Height; 
+        float ScaleW = CharScale * CharData.Width; 
         
-        // TODO(Barret5Ocal): Character Width and Height is pixel space. might need to adjust for scaling 
-        AtX += CharData.Width;
+        DrawCharacter(ShaderProgram, v2{AtX, AtY}, {ScaleW, ScaleH});// * CharScale);
+        
+        AtX += CharData.Width; //1.5f;
+        //AtX += (CharData.Width * Scale.x) + (Scale.x * CharScale);
     }
-    
     
     glDeleteTextures(1, &Texture);
     glDeleteVertexArrays(1, &QuadVAO);
@@ -403,7 +420,7 @@ int WinMain(HINSTANCE Instance,
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Spoon", {400.0f, 400.0f});
+            DrawString(ShaderProgram, &Font, "Hello", {400.0f, 400.0f});
             
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
         }
