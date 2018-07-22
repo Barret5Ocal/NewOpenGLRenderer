@@ -127,16 +127,18 @@ struct font_asset
 };
 
 
+stbtt_fontinfo FontInfo; 
+
 void GetFont(memory_arena *Arena, font_asset *FontAsset) 
 {
     read_results Read = Win32GetFileContents("c:/windows/fonts/arialbd.ttf");
     
-    stbtt_fontinfo Font; 
-    stbtt_InitFont(&Font, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0));
+    //stbtt_fontinfo Font; 
+    stbtt_InitFont(&FontInfo, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0));
     
     int ascent; int descent; int lineGap;
-    stbtt_GetFontVMetrics(&Font, &ascent, &descent, &lineGap);
-    float scale = stbtt_ScaleForPixelHeight(&Font, 128.0f);
+    stbtt_GetFontVMetrics(&FontInfo, &ascent, &descent, &lineGap);
+    float scale = stbtt_ScaleForPixelHeight(&FontInfo, 50.0f);
     int baseline = (int) (ascent*scale);
     FontAsset->ascent = ascent;
     FontAsset->descent = descent;
@@ -153,7 +155,7 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         
         int32 XOffset, YOffset; 
         int32 Width, Height;
-        uint8 *Character = stbtt_GetCodepointBitmap(&Font, 0, scale , Index, &Width, &Height, &XOffset, &YOffset);
+        uint8 *Character = stbtt_GetCodepointBitmap(&FontInfo, 0, scale , Index, &Width, &Height, &XOffset, &YOffset);
         
         
         uint8 *Data = (uint8 *)PushArray(Arena, Width * Height * 4, uint8); 
@@ -265,6 +267,8 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
     
+    int baseline = (int) (Font->ascent*Font->scale);
+    
     for(char *Char = Text;
         *Char;
         Char++)
@@ -274,18 +278,29 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         glGenerateMipmap(GL_TEXTURE_2D);
         
         v2 Scale = {(float)CharData.Width,(float)CharData.Height};
-        //gb_vec2_norm(&Scale, Scale);
-        //v2 Offset = {(float)CharData.XOffset, (float)CharData.YOffset};
-        //gb_vec2_norm(&Offset, Offset);
         
-        float CharScale = 0.5f;
-        float ScaleH = CharScale * CharData.Height; 
-        float ScaleW = CharScale * CharData.Width; 
+        //float x_shift = AtX - (float) gb_floor(AtX);
+        int advance,lsb;
+        stbtt_GetCodepointHMetrics(&FontInfo, CharData.Codepoint, &advance, &lsb);
         
-        DrawCharacter(ShaderProgram, v2{AtX, AtY}, {ScaleW, ScaleH});// * CharScale);
+        v2 Offset = v2{(float)CharData.XOffset, (float)CharData.YOffset}; 
+        v2 Position = v2{AtX, AtY} + Offset;  
+        Position.y += baseline;
+        DrawCharacter(ShaderProgram, Position, Scale );
         
-        AtX += CharData.Width; //1.5f;
-        //AtX += (CharData.Width * Scale.x) + (Scale.x * CharScale);
+        float SLSB = (float)lsb * Font->scale;
+        float SAdvance = (float)advance * Font->scale * 1.75f;
+        
+        float KernAdvance = 0;
+        char Char1 = *Char; 
+        char Char2 = *(Char + 1);
+        if(Char + 1)
+            KernAdvance =stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
+        
+        float ExtraAdvance = Font->scale * KernAdvance; 
+        AtX += ExtraAdvance; 
+        AtX += SAdvance;
+        
     }
     
     glDeleteTextures(1, &Texture);
@@ -420,7 +435,7 @@ int WinMain(HINSTANCE Instance,
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Hello", {400.0f, 400.0f});
+            DrawString(ShaderProgram, &Font, "Total", {400.0f, 400.0f});
             
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
         }
