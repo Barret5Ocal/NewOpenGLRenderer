@@ -60,6 +60,17 @@ typedef double real64;
 
 #include "memory.cpp"
 
+struct debug_draw_entry
+{
+    v2 Position;
+    int Color;
+};
+
+int DebugIndex = 0;
+debug_draw_entry DebugEntries[50];
+
+#define DebugEntry(Position, Color) DebugEntries[DebugIndex++] = {Position, Color}
+
 struct vertex
 {
     v3 Pos;
@@ -210,14 +221,18 @@ void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
     glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
     glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
     
+    //glLineWidth(3.0f);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    
     
 }
 
 void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
 {
+    glUseProgram(ShaderProgram);
+    
     real32 AtX = 67.0f;
     real32 AtY = 128.0f;
     
@@ -278,18 +293,27 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         glGenerateMipmap(GL_TEXTURE_2D);
         
         v2 Scale = {(float)CharData.Width,(float)CharData.Height};
+        static float S = 1.0f; 
+        //S += 0.01f; 
         
         //float x_shift = AtX - (float) gb_floor(AtX);
         int advance,lsb;
         stbtt_GetCodepointHMetrics(&FontInfo, CharData.Codepoint, &advance, &lsb);
         
         v2 Offset = v2{(float)CharData.XOffset, (float)CharData.YOffset}; 
-        v2 Position = v2{AtX, AtY} + Offset;  
+        v2 Position = v2{AtX, AtY};
+        DebugEntry(Position, 0);
+        
+        Position += Offset;
+        DebugEntry(Position, 1);
+        
+        
         Position.y += baseline;
+        DebugEntry(Position, 2);
         DrawCharacter(ShaderProgram, Position, Scale );
         
         float SLSB = (float)lsb * Font->scale;
-        float SAdvance = (float)advance * Font->scale * 1.75f;
+        float SAdvance = (float)advance * Font->scale;// * 1.75f;
         
         float KernAdvance = 0;
         char Char1 = *Char; 
@@ -300,12 +324,145 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         float ExtraAdvance = Font->scale * KernAdvance; 
         AtX += ExtraAdvance; 
         AtX += SAdvance;
+        AtX += S; 
         
     }
     
     glDeleteTextures(1, &Texture);
     glDeleteVertexArrays(1, &QuadVAO);
     glDeleteBuffers(1, &VBO);
+}
+
+
+GLuint CreateShaderProgram(char *VertCode, int VertSize, char *FragCode, int FragSize)
+{
+    GLuint ShaderProgram = glCreateProgram();
+    GLuint VertexShaderObj = glCreateShader(GL_VERTEX_SHADER);
+    GLuint FragShaderObj = glCreateShader(GL_FRAGMENT_SHADER);
+    
+    glShaderSource(VertexShaderObj, 1, &VertCode, &VertSize);
+    glShaderSource(FragShaderObj, 1, &FragCode, &FragSize);
+    
+    glCompileShader(VertexShaderObj);
+    glCompileShader(FragShaderObj);
+    
+    GLint success;
+    glGetShaderiv(VertexShaderObj, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char Buffer[1024];
+        GLchar InfoLog[1024];
+        glGetShaderInfoLog(VertexShaderObj, sizeof(InfoLog), NULL, InfoLog);
+        stbsp_sprintf(Buffer , "Error compiling shader type %d: '%s'\n", GL_VERTEX_SHADER, InfoLog);
+        OutputDebugStringA(Buffer);
+    }
+    
+    glGetShaderiv(FragShaderObj, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char Buffer[1024];
+        GLchar InfoLog[1024];
+        glGetShaderInfoLog(FragShaderObj, sizeof(InfoLog), NULL, InfoLog);
+        stbsp_sprintf(Buffer , "Error compiling shader type %d: '%s'\n", GL_FRAGMENT_SHADER, InfoLog);
+        OutputDebugStringA(Buffer);
+        InvalidCodePath; 
+    }
+    
+    glAttachShader(ShaderProgram, VertexShaderObj);
+    glAttachShader(ShaderProgram, FragShaderObj);
+    
+    glLinkProgram(ShaderProgram);
+    
+    glGetProgramiv(ShaderProgram, GL_LINK_STATUS, &success);
+    if (success == 0) {
+        char Buffer[1024];
+        GLchar ErrorLog[1024];
+        glGetProgramInfoLog(ShaderProgram, sizeof(ErrorLog), NULL, ErrorLog);
+        stbsp_sprintf(Buffer, "Error linking shader program: '%s'\n", ErrorLog);
+        OutputDebugStringA(Buffer);
+        InvalidCodePath; 
+    }
+    
+    return ShaderProgram; 
+}
+
+v4 DebugColors[] = 
+{
+    {1.0f, 0.0f, 0.0f, 1.0f},
+    {0.0f, 1.0f, 0.0f, 1.0f},
+    {0.0f, 0.0f, 1.0f, 1.0f},
+    {1.0f, 1.0f, 0.0f, 1.0f},
+    {1.0f, 0.0f, 1.0f, 1.0f},
+    {0.0f, 1.0f, 1.0f, 1.0f},
+    
+};
+
+void DrawDebugGraphics(GLuint DebugShader)
+{
+    glUseProgram(DebugShader);
+    
+    GLuint QuadVAO;
+    GLuint VBO;
+    
+    vertex Vertices[] = { 
+        // Pos      // Tex
+        {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+        {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, 
+        
+        {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+        {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
+    };
+    
+    glGenVertexArrays(1, &QuadVAO);
+    glGenBuffers(1, &VBO);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+    
+    glBindVertexArray(QuadVAO);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);  
+    glBindVertexArray(QuadVAO);
+    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+    
+    for(int32 Index = 0;
+        Index <= DebugIndex;
+        ++Index)
+    {
+        debug_draw_entry Entry = DebugEntries[Index];
+        
+        GLuint WorldLocation = glGetUniformLocation(DebugShader, "World");
+        GLuint ProjectionLocation = glGetUniformLocation(DebugShader, "Projection");
+        GLuint ColorLocation = glGetUniformLocation(DebugShader, "InColor");
+        
+        m4 Ortho;
+        gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
+        
+        m4 World; 
+        gb_mat4_identity(&World);
+        gb_mat4_translate(&World, {Entry.Position.x, Entry.Position.y, 0.0f});
+        m4 ScaleM;
+        gb_mat4_scale(&ScaleM, {2.0f, 2.0f, 0.0f});
+        World = World * ScaleM;
+        
+        glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
+        glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
+        glUniform4f(ColorLocation, DebugColors[Entry.Color].x, DebugColors[Entry.Color].y, DebugColors[Entry.Color].z,DebugColors[Entry.Color].w);
+        
+        //glLineWidth(3.0f);
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        
+    }
+    
+    DebugIndex = 0;
 }
 
 LRESULT CALLBACK
@@ -334,7 +491,6 @@ MainWindowProc(HWND Window,
     
     return Result; 
 }
-
 
 int WinMain(HINSTANCE Instance, 
             HINSTANCE PrevInstance,
@@ -373,52 +529,12 @@ int WinMain(HINSTANCE Instance,
         
         read_results VertexShaderCode = Win32GetFileContents("..\\code\\vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
         read_results FragShaderCode = Win32GetFileContents("..\\code\\frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
-        GLuint ShaderProgram = glCreateProgram();
-        GLuint VertexShaderObj = glCreateShader(GL_VERTEX_SHADER);
-        GLuint FragShaderObj = glCreateShader(GL_FRAGMENT_SHADER);
+        GLuint ShaderProgram = CreateShaderProgram(VertexShaderCode.Memory, VertexShaderCode.Size, FragShaderCode.Memory, FragShaderCode.Size);
         
-        glShaderSource(VertexShaderObj, 1, &VertexShaderCode.Memory, &VertexShaderCode.Size);
-        glShaderSource(FragShaderObj, 1, &FragShaderCode.Memory, &FragShaderCode.Size);
+        read_results DebugVertexShaderCode = Win32GetFileContents("..\\code\\debug_vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
+        read_results DebugFragShaderCode = Win32GetFileContents("..\\code\\debug_frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
+        GLuint DebugShaderProgram = CreateShaderProgram(DebugVertexShaderCode.Memory, DebugVertexShaderCode.Size, DebugFragShaderCode.Memory, DebugFragShaderCode.Size);
         
-        glCompileShader(VertexShaderObj);
-        glCompileShader(FragShaderObj);
-        
-        GLint success;
-        glGetShaderiv(VertexShaderObj, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            char Buffer[1024];
-            GLchar InfoLog[1024];
-            glGetShaderInfoLog(VertexShaderObj, sizeof(InfoLog), NULL, InfoLog);
-            stbsp_sprintf(Buffer , "Error compiling shader type %d: '%s'\n", GL_VERTEX_SHADER, InfoLog);
-            OutputDebugStringA(Buffer);
-        }
-        
-        glGetShaderiv(FragShaderObj, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            char Buffer[1024];
-            GLchar InfoLog[1024];
-            glGetShaderInfoLog(FragShaderObj, sizeof(InfoLog), NULL, InfoLog);
-            stbsp_sprintf(Buffer , "Error compiling shader type %d: '%s'\n", GL_FRAGMENT_SHADER, InfoLog);
-            OutputDebugStringA(Buffer);
-            InvalidCodePath; 
-        }
-        
-        glAttachShader(ShaderProgram, VertexShaderObj);
-        glAttachShader(ShaderProgram, FragShaderObj);
-        
-        glLinkProgram(ShaderProgram);
-        
-        glGetProgramiv(ShaderProgram, GL_LINK_STATUS, &success);
-        if (success == 0) {
-            char Buffer[1024];
-            GLchar ErrorLog[1024];
-            glGetProgramInfoLog(ShaderProgram, sizeof(ErrorLog), NULL, ErrorLog);
-            stbsp_sprintf(Buffer, "Error linking shader program: '%s'\n", ErrorLog);
-            OutputDebugStringA(Buffer);
-            InvalidCodePath; 
-        }
-        
-        glUseProgram(ShaderProgram);
         
         
         time_info TimeInfo = {};
@@ -436,6 +552,7 @@ int WinMain(HINSTANCE Instance,
             glClear(GL_COLOR_BUFFER_BIT);
             
             DrawString(ShaderProgram, &Font, "Total", {400.0f, 400.0f});
+            DrawDebugGraphics(DebugShaderProgram);
             
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
         }
