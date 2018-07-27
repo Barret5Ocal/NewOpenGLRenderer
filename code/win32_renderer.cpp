@@ -60,16 +60,27 @@ typedef double real64;
 
 #include "memory.cpp"
 
+enum debug_draw_type 
+{
+    DEBUG_POINT,
+    DEBUG_BOX,
+    DEBUG_LINE,
+};
+
 struct debug_draw_entry
 {
-    v2 Position;
+    int Type;
+    float X;
+    float Y;
+    float DimX;
+    float DimY;
     int Color;
 };
 
 int DebugIndex = 0;
 debug_draw_entry DebugEntries[50];
 
-#define DebugEntry(Position, Color) DebugEntries[DebugIndex++] = {Position, Color}
+#define DebugEntry(Type, X, Y, DimX, DimY, Color) DebugEntries[DebugIndex++] = {Type, X, Y, DimX, DimY, Color}
 
 struct vertex
 {
@@ -194,16 +205,17 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         }
         stbtt_FreeBitmap(Character, 0);
     }
-    
 }
 
-character_asset GetCharacter(font_asset *Font, char Character)
+inline character_asset GetCharacter(font_asset *Font, char Character)
 {
     return Font->Character[Character - '!']; //33
 }
 
+int BoxDebug = 6; 
 void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
 {
+    DebugEntry(DEBUG_BOX, Position.x, Position.y, Scale.x, Scale.y, BoxDebug++);
     
     GLuint WorldLocation = glGetUniformLocation(ShaderProgram, "World");
     GLuint ProjectionLocation = glGetUniformLocation(ShaderProgram, "Projection");
@@ -302,14 +314,14 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         
         v2 Offset = v2{(float)CharData.XOffset, (float)CharData.YOffset}; 
         v2 Position = v2{AtX, AtY};
-        DebugEntry(Position, 0);
+        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 0);
         
         Position += Offset;
-        DebugEntry(Position, 1);
+        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1);
         
         
         Position.y += baseline;
-        DebugEntry(Position, 2);
+        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 2);
         DrawCharacter(ShaderProgram, Position, Scale );
         
         float SLSB = (float)lsb * Font->scale;
@@ -321,16 +333,19 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         if(Char + 1)
             KernAdvance =stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
         
-        float ExtraAdvance = Font->scale * KernAdvance; 
+        float ExtraAdvance = Font->scale * -KernAdvance; 
+        AtX += CharData.Width;
         AtX += ExtraAdvance; 
-        AtX += SAdvance;
-        AtX += S; 
+        //AtX += SAdvance;
+        //AtX += S; 
         
     }
     
     glDeleteTextures(1, &Texture);
     glDeleteVertexArrays(1, &QuadVAO);
     glDeleteBuffers(1, &VBO);
+    
+    BoxDebug = 6; 
 }
 
 
@@ -386,12 +401,19 @@ GLuint CreateShaderProgram(char *VertCode, int VertSize, char *FragCode, int Fra
 
 v4 DebugColors[] = 
 {
-    {1.0f, 0.0f, 0.0f, 1.0f},
-    {0.0f, 1.0f, 0.0f, 1.0f},
-    {0.0f, 0.0f, 1.0f, 1.0f},
-    {1.0f, 1.0f, 0.0f, 1.0f},
-    {1.0f, 0.0f, 1.0f, 1.0f},
-    {0.0f, 1.0f, 1.0f, 1.0f},
+    {1.0f, 0.0f, 0.0f, 1.0f}, //0
+    {0.0f, 1.0f, 0.0f, 1.0f}, //1
+    {0.0f, 0.0f, 1.0f, 1.0f}, //2
+    {1.0f, 1.0f, 0.0f, 1.0f}, //3
+    {1.0f, 0.0f, 1.0f, 1.0f}, //4
+    {0.0f, 1.0f, 1.0f, 1.0f}, //5
+    
+    {1.0f, 0.0f, 0.0f, 0.5f}, //6 
+    {0.0f, 1.0f, 0.0f, 0.5f}, //7
+    {0.0f, 0.0f, 1.0f, 0.5f}, //8
+    {1.0f, 1.0f, 0.0f, 0.5f}, //9
+    {1.0f, 0.0f, 1.0f, 0.5f}, //10
+    {0.0f, 1.0f, 1.0f, 0.5f}, //11
     
 };
 
@@ -446,17 +468,14 @@ void DrawDebugGraphics(GLuint DebugShader)
         
         m4 World; 
         gb_mat4_identity(&World);
-        gb_mat4_translate(&World, {Entry.Position.x, Entry.Position.y, 0.0f});
+        gb_mat4_translate(&World, {Entry.X, Entry.Y, 0.0f});
         m4 ScaleM;
-        gb_mat4_scale(&ScaleM, {2.0f, 2.0f, 0.0f});
+        gb_mat4_scale(&ScaleM, {Entry.DimX, Entry.DimY, 0.0f});
         World = World * ScaleM;
         
         glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
         glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
         glUniform4f(ColorLocation, DebugColors[Entry.Color].x, DebugColors[Entry.Color].y, DebugColors[Entry.Color].z,DebugColors[Entry.Color].w);
-        
-        //glLineWidth(3.0f);
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         
         glDrawArrays(GL_TRIANGLES, 0, 6);
         
