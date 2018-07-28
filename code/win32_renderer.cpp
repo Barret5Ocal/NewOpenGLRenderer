@@ -256,6 +256,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
     GLuint QuadVAO;
     GLuint VBO;
     
+#if 1
     vertex Vertices[] = { 
         // Pos      // Tex
         {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
@@ -266,7 +267,18 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
         {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
     };
-    
+#else 
+    vertex Vertices[] = { 
+        // Pos      // Tex
+        {{0.0f, 2.0f, 0.0f}, {0.0f, 1.0f}},
+        {{2.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, 
+        
+        {{0.0f, 2.0f, 0.0f}, {0.0f, 1.0f}},
+        {{2.0f, 2.0f, 0.0f}, {1.0f, 1.0f}},
+        {{2.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}
+    };
+#endif 
     glGenVertexArrays(1, &QuadVAO);
     glGenBuffers(1, &VBO);
     
@@ -305,27 +317,27 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         glGenerateMipmap(GL_TEXTURE_2D);
         
         v2 Scale = {(float)CharData.Width,(float)CharData.Height};
-        static float S = 1.0f; 
+        //static float S = 1.0f; 
         //S += 0.01f; 
         
         //float x_shift = AtX - (float) gb_floor(AtX);
         int advance,lsb;
         stbtt_GetCodepointHMetrics(&FontInfo, CharData.Codepoint, &advance, &lsb);
         
-        v2 Offset = v2{(float)CharData.XOffset, (float)CharData.YOffset}; 
         v2 Position = v2{AtX, AtY};
-        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 0);
+        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 0); //RED Dot
         
+        v2 Offset = v2{(float)CharData.XOffset, (float)CharData.YOffset}; 
         Position += Offset;
-        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1);
+        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1); // GREEN Dot
         
         
-        Position.y += baseline;
-        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 2);
-        DrawCharacter(ShaderProgram, Position, Scale );
+        //Position.y += baseline;
+        //DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 2);
+        DrawCharacter(ShaderProgram, Position, Scale);
         
         float SLSB = (float)lsb * Font->scale;
-        float SAdvance = (float)advance * Font->scale;// * 1.75f;
+        float SAdvance = (float)advance * Font->scale;
         
         float KernAdvance = 0;
         char Char1 = *Char; 
@@ -334,9 +346,9 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
             KernAdvance =stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
         
         float ExtraAdvance = Font->scale * -KernAdvance; 
-        AtX += CharData.Width;
+        //AtX += CharData.Width;
         AtX += ExtraAdvance; 
-        //AtX += SAdvance;
+        AtX += SAdvance;
         //AtX += S; 
         
     }
@@ -424,6 +436,7 @@ void DrawDebugGraphics(GLuint DebugShader)
     GLuint QuadVAO;
     GLuint VBO;
     
+#if 1
     vertex Vertices[] = { 
         // Pos      // Tex
         {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
@@ -434,6 +447,18 @@ void DrawDebugGraphics(GLuint DebugShader)
         {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
         {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
     };
+#else 
+    vertex Vertices[] = { 
+        // Pos      // Tex
+        {{0.0f, 2.0f, 0.0f}, {0.0f, 1.0f}},
+        {{2.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, 
+        
+        {{0.0f, 2.0f, 0.0f}, {0.0f, 1.0f}},
+        {{2.0f, 2.0f, 0.0f}, {1.0f, 1.0f}},
+        {{2.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}
+    };
+#endif 
     
     glGenVertexArrays(1, &QuadVAO);
     glGenBuffers(1, &VBO);
@@ -481,7 +506,7 @@ void DrawDebugGraphics(GLuint DebugShader)
         
     }
     
-    DebugIndex = 0;
+    
 }
 
 LRESULT CALLBACK
@@ -526,7 +551,7 @@ int WinMain(HINSTANCE Instance,
     {
         HWND Window = CreateWindowEx(0, 
                                      WindowClass.lpszClassName,
-                                     "OpenGl Pratice",
+                                     "OpenGL Pratice",
                                      WS_OVERLAPPEDWINDOW|WS_VISIBLE,
                                      CW_USEDEFAULT,
                                      CW_USEDEFAULT,
@@ -572,7 +597,7 @@ int WinMain(HINSTANCE Instance,
             
             DrawString(ShaderProgram, &Font, "Total", {400.0f, 400.0f});
             DrawDebugGraphics(DebugShaderProgram);
-            
+            DebugIndex = 0;
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
         }
     }
