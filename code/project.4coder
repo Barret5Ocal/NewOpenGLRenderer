@@ -1,5 +1,5 @@
 extensions = ".c.cpp.h.m.bat.sh.4coder";
-open_recursively = true;
+open_recursively = false;
 
 fkey_command_win[1] = {"build.bat", "*compilation*", true , true };
 fkey_command_win[2] = {"..\\..\\build\\renderer.exe", "*run*", true , true };

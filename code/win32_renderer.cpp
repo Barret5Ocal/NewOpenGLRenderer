@@ -160,13 +160,16 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     
     int ascent; int descent; int lineGap;
     stbtt_GetFontVMetrics(&FontInfo, &ascent, &descent, &lineGap);
-    float scale = stbtt_ScaleForPixelHeight(&FontInfo, 50.0f);
+    float scale = stbtt_ScaleForPixelHeight(&FontInfo, 64.0f);
     int baseline = (int) (ascent*scale);
     FontAsset->ascent = ascent;
     FontAsset->descent = descent;
     FontAsset->lineGap = lineGap;
     FontAsset->baseline = baseline;
     FontAsset->scale = scale; 
+    
+    int x, y, x1, y1;
+    stbtt_GetFontBoundingBox(&FontInfo, &x, &y, &x1, &y1);
     
     FontAsset->Character = (character_asset *)PushArray(Arena, '~' - '!' + 1, character_asset);
     for(int Index = '!'; 
@@ -317,39 +320,35 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         glGenerateMipmap(GL_TEXTURE_2D);
         
         v2 Scale = {(float)CharData.Width,(float)CharData.Height};
-        //static float S = 1.0f; 
-        //S += 0.01f; 
         
-        //float x_shift = AtX - (float) gb_floor(AtX);
-        int advance,lsb;
-        stbtt_GetCodepointHMetrics(&FontInfo, CharData.Codepoint, &advance, &lsb);
+        int c_x1, c_y1, c_x2, c_y2;
+        stbtt_GetCodepointBitmapBox(&FontInfo, CharData.Codepoint, Font->scale, Font->scale, &c_x1, &c_y1, &c_x2, &c_y2);
         
-        v2 Position = v2{AtX, AtY};
-        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 0); //RED Dot
+        //AtX -= (c_x1);
+        //AtX += 18;
+        v2 Position = v2{AtX, AtY + baseline + c_y1 + c_y2};
+        DebugEntry(DEBUG_POINT, AtX, AtY, 2, 2, 0); //RED Dot
         
-        v2 Offset = v2{(float)CharData.XOffset, (float)CharData.YOffset}; 
-        Position += Offset;
         DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1); // GREEN Dot
         
         
-        //Position.y += baseline;
-        //DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 2);
         DrawCharacter(ShaderProgram, Position, Scale);
         
-        float SLSB = (float)lsb * Font->scale;
-        float SAdvance = (float)advance * Font->scale;
+        int advance,lsb;
+        stbtt_GetCodepointHMetrics(&FontInfo, CharData.Codepoint, &advance, &lsb);
         
+        int ScaleAdvance =  advance * Font->scale;
+        AtX += ScaleAdvance;
+        int ScaleLSB = lsb  * Font->scale;
+        AtX += ScaleLSB;
         float KernAdvance = 0;
         char Char1 = *Char; 
         char Char2 = *(Char + 1);
         if(Char + 1)
             KernAdvance =stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
         
-        float ExtraAdvance = Font->scale * -KernAdvance; 
-        //AtX += CharData.Width;
+        float ExtraAdvance = Font->scale * KernAdvance; 
         AtX += ExtraAdvance; 
-        AtX += SAdvance;
-        //AtX += S; 
         
     }
     
@@ -595,7 +594,7 @@ int WinMain(HINSTANCE Instance,
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Total", {400.0f, 400.0f});
+            DrawString(ShaderProgram, &Font, "Telgo", {400.0f, 400.0f});
             DrawDebugGraphics(DebugShaderProgram);
             DebugIndex = 0;
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
