@@ -1,3 +1,10 @@
+struct debug_controls
+{
+    int BoxToggle;
+    int PointToggle; 
+};
+
+debug_controls Controls = {1, 1};
 
 enum debug_draw_type 
 {
@@ -97,26 +104,28 @@ void DrawDebugGraphics(GLuint DebugShader)
     {
         debug_draw_entry Entry = DebugEntries[Index];
         
-        GLuint WorldLocation = glGetUniformLocation(DebugShader, "World");
-        GLuint ProjectionLocation = glGetUniformLocation(DebugShader, "Projection");
-        GLuint ColorLocation = glGetUniformLocation(DebugShader, "InColor");
-        
-        m4 Ortho;
-        gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
-        
-        m4 World; 
-        gb_mat4_identity(&World);
-        gb_mat4_translate(&World, {Entry.X, Entry.Y, 0.0f});
-        m4 ScaleM;
-        gb_mat4_scale(&ScaleM, {Entry.DimX, Entry.DimY, 0.0f});
-        World = World * ScaleM;
-        
-        glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
-        glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
-        glUniform4f(ColorLocation, DebugColors[Entry.Color].x, DebugColors[Entry.Color].y, DebugColors[Entry.Color].z,DebugColors[Entry.Color].w);
-        
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        
+        if((Entry.Type == DEBUG_POINT && Controls.PointToggle) || (Entry.Type == DEBUG_BOX && Controls.BoxToggle) )
+        {
+            GLuint WorldLocation = glGetUniformLocation(DebugShader, "World");
+            GLuint ProjectionLocation = glGetUniformLocation(DebugShader, "Projection");
+            GLuint ColorLocation = glGetUniformLocation(DebugShader, "InColor");
+            
+            m4 Ortho;
+            gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
+            
+            m4 World; 
+            gb_mat4_identity(&World);
+            gb_mat4_translate(&World, {Entry.X, Entry.Y, 0.0f});
+            m4 ScaleM;
+            gb_mat4_scale(&ScaleM, {Entry.DimX, Entry.DimY, 0.0f});
+            World = World * ScaleM;
+            
+            glUniformMatrix4fv(WorldLocation, 1, GL_FALSE, &World.e[0]);
+            glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, &Ortho.e[0]);
+            glUniform4f(ColorLocation, DebugColors[Entry.Color].x, DebugColors[Entry.Color].y, DebugColors[Entry.Color].z,DebugColors[Entry.Color].w);
+            
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
     }
     
     

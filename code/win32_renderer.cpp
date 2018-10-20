@@ -299,7 +299,6 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         glGenerateMipmap(GL_TEXTURE_2D);
         
         v2 Scale = {(float)CharData.Width,(float)CharData.Height};
-        Scale /= 2; 
         
         int c_x1, c_y1, c_x2, c_y2;
         stbtt_GetCodepointBitmapBox(&FontInfo, CharData.Codepoint, Font->scale, Font->scale, &c_x1, &c_y1, &c_x2, &c_y2);
@@ -307,28 +306,29 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         int advance,lsb;
         stbtt_GetCodepointHMetrics(&FontInfo, CharData.Codepoint, &advance, &lsb);
         
-        //AtX -= (c_x1);
-        //AtX += 18;
-        v2 Position = v2{AtX, AtY + baseline + c_y1};
-        DebugEntry(DEBUG_POINT, AtX, AtY, 2, 2, 0); //RED Dot
-        
-        DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1); // GREEN Dot
-        
-        v2 TopLeft = {Position.x - CharData.Width/2, Position.y - CharData.Height/2}; // NOTE(Barret5Ocal): CharData.Width and CharData.Height might be 2 times larger than it should be 
-        DebugEntry(DEBUG_POINT, TopLeft.x, TopLeft.y, 2, 2, 2); // GREEN Dot
-        
         float ScaleLSB = lsb  * Font->scale;
         
-        v2 Origin = {TopLeft.x - ScaleLSB, TopLeft.y - c_y1}; // NOTE(Barret5Ocal): The scale of the characters might be to big 
-        DebugEntry(DEBUG_POINT, Origin.x, Origin.y, 2, 2, 3); // GREEN Dot
-        
-        
+        v2 Position = v2{AtX, AtY + baseline + c_y1 + c_y2};
         DrawCharacter(ShaderProgram, Position, Scale);
         
         
+        // NOTE(Barret5Ocal): Debug Graphics (Also, remember that debug graphics sometimes lies to you)
+        {
+            DebugEntry(DEBUG_POINT, AtX, AtY, 2, 2, 0); //RED Dot
+            
+            DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1); // GREEN Dot
+            
+            v2 TopLeft = {Position.x - CharData.Width, Position.y - CharData.Height}; 
+            DebugEntry(DEBUG_POINT, TopLeft.x, TopLeft.y, 2, 2, 2); // blue Dot
+            
+            v2 Origin = {TopLeft.x - ScaleLSB, TopLeft.y - c_y1 * 2}; 
+            DebugEntry(DEBUG_POINT, Origin.x, Origin.y, 2, 2, 3); // yellow Dot
+        }
+        
+        //AtX += c_x2; 
         int ScaleAdvance =  advance * Font->scale;
         AtX += ScaleAdvance;
-        AtX += ScaleLSB;
+        //AtX += ScaleLSB;
         float KernAdvance = 0;
         char Char1 = *Char; 
         char Char2 = *(Char + 1);
@@ -415,6 +415,14 @@ MainWindowProc(HWND Window,
         case WM_CLOSE:
         {
             Running = 0;
+        }break;
+        case WM_KEYDOWN:
+        {
+            if(WParam == VK_F5)
+                Controls.BoxToggle = !Controls.BoxToggle; 
+            if(WParam == VK_F6)
+                Controls.PointToggle = !Controls.PointToggle; 
+            
         }break;
         default:
         {
