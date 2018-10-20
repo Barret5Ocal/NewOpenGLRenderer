@@ -131,7 +131,7 @@ stbtt_fontinfo FontInfo;
 
 void GetFont(memory_arena *Arena, font_asset *FontAsset) 
 {
-    read_results Read = Win32GetFileContents("c:/windows/fonts/arialbd.ttf");
+    read_results Read = Win32GetFileContents("c:/windows/fonts/arial.ttf");
     
     //stbtt_fontinfo Font; 
     stbtt_InitFont(&FontInfo, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0));
@@ -238,7 +238,6 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
     GLuint QuadVAO;
     GLuint VBO;
     
-#if 1
     vertex Vertices[] = { 
         // Pos      // Tex
         {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
@@ -249,18 +248,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
         {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
     };
-#else 
-    vertex Vertices[] = { 
-        // Pos      // Tex
-        {{0.0f, 2.0f, 0.0f}, {0.0f, 1.0f}},
-        {{2.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, 
-        
-        {{0.0f, 2.0f, 0.0f}, {0.0f, 1.0f}},
-        {{2.0f, 2.0f, 0.0f}, {1.0f, 1.0f}},
-        {{2.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}
-    };
-#endif 
+    
     glGenVertexArrays(1, &QuadVAO);
     glGenBuffers(1, &VBO);
     
@@ -289,6 +277,11 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
     
     int baseline = (int) (Font->ascent*Font->scale);
+    
+    DebugEntry(DEBUG_BOX, AtX, AtY + baseline - (Font->descent * Font->scale) + 15, 41, 2, BoxDebug++);
+    // NOTE(Barret5Ocal): This box's Width is the same as 'H' advance. It starts at the AtX and spans past the 'H' box.
+    // The AtX of the next letter 'e' should start where this box ends but it does not. it starts little bit before that
+    // this might be a problem with the projection. 
     
     for(char *Char = Text;
         *Char;
@@ -328,6 +321,8 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         //AtX += c_x2; 
         int ScaleAdvance =  advance * Font->scale;
         AtX += ScaleAdvance;
+        //AtX += (ScaleAdvance/2);
+        //AtX += c_x1 * 5; 
         //AtX += ScaleLSB;
         float KernAdvance = 0;
         char Char1 = *Char; 
@@ -337,6 +332,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         
         float ExtraAdvance = Font->scale * KernAdvance; 
         AtX += ExtraAdvance; 
+        
         
     }
     
@@ -492,7 +488,7 @@ int WinMain(HINSTANCE Instance,
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Telgo", {400.0f, 400.0f});
+            DrawString(ShaderProgram, &Font, "Helgo", {400.0f, 400.0f});
             DrawDebugGraphics(DebugShaderProgram);
             DebugIndex = 0;
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
