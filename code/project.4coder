@@ -1,9 +1,37 @@
-extensions = ".c.cpp.h.m.bat.sh.4coder";
-open_recursively = false;
+version(1);
+project_name = "renderer.exe";
+patterns = {
+"*.c",
+"*.cpp",
+"*.h",
+"*.m",
+"*.bat",
+"*.sh",
+"*.4coder",
+};
+blacklist_patterns = {
+".*",
+};
+load_paths_base = {
+ { ".", .relative = true, .recursive = true, },
+};
+load_paths = {
+ { load_paths_base, .os = "win", },
+ { load_paths_base, .os = "linux", },
+ { load_paths_base, .os = "mac", },
+};
 
-fkey_command_win[1] = {"build.bat", "*compilation*", true , true };
-fkey_command_win[2] = {"..\\..\\build\\renderer.exe", "*run*", true , true };
-fkey_command_linux[1] = {"./build.sh", "*compilation*", true , true };
-fkey_command_linux[2] = {"../../build/renderer.exe", "*run*", false , true };
-fkey_command_mac[1] = {"./build.sh", "*compilation*", true , true };
-fkey_command_mac[2] = {"../../build/renderer.exe", "*run*", false , true };
+command_list = {
+ { .name = "build",
+   .out = "*compilation*", .footer_panel = true, .save_dirty_files = true,
+   .cmd = { { "build.bat" , .os = "win"   },
+            { "./build.sh", .os = "linux" },
+            { "./build.sh", .os = "mac"   }, }, },
+ { .name = "run",
+   .out = "*run*", .footer_panel = true, .save_dirty_files = false,
+   .cmd = { { "..\..\build\\renderer.exe", .os = "win"   },
+            { "..\..\build/renderer.exe" , .os = "linux" },
+            { "..\..\build/renderer.exe" , .os = "mac"   }, }, },
+};
+fkey_command[1] = "build";
+fkey_command[2] = "run";

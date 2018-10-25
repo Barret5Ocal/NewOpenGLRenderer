@@ -23,8 +23,8 @@ typedef gbQuat quaternion;
 #define STB_SPRINTF_IMPLEMENTATION
 #include "include\stb_sprintf.h"
 
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "include\stb_truetype.h"
+//#define STB_TRUETYPE_IMPLEMENTATION
+//#include "include\stb_truetype.h"
 
 #include <stdint.h>
 typedef int8_t int8;
@@ -57,6 +57,39 @@ typedef double real64;
 #define ScreenHeight 720
 
 #include "win32_opengl.h"
+
+#include "include\imgui.cpp"
+#include "include\imgui.h"
+#include "include\imgui_demo.cpp"
+#include "include\imgui_draw.cpp"
+#include "include\imgui_internal.h"
+#include "include\imconfig.h"
+#include "include\imgui_impl_opengl3.cpp"
+
+int LeftMouse = 0; 
+
+struct win32_windowdim 
+{
+    int Width, Height; 
+    int x, y;
+    //int DisplayWidth, DisplayHeight; 
+};
+
+
+win32_windowdim Win32GetWindowDim(HWND Window)
+{
+    win32_windowdim Dim = {};
+    
+    RECT Rect = {};
+    //GetClientRect(Window, &Rect);
+    GetWindowRect(Window, &Rect);
+    Dim.x = Rect.left;
+    Dim.y = Rect.top;
+    Dim.Width = Rect.right - Rect.left;
+    Dim.Height = Rect.bottom - Rect.top;
+    return Dim; 
+}
+
 
 #include "memory.cpp"
 
@@ -279,7 +312,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
     int baseline = (int) (Font->ascent*Font->scale);
     
     DebugEntry(DEBUG_BOX, AtX, AtY + baseline - (Font->descent * Font->scale) + 15, 41, 2, BoxDebug++);
-    // NOTE(Barret5Ocal): This box's Width is the same as 'H' advance. It starts at the AtX and spans past the 'H' box.
+    // NOTE(Barret5Ocal):It starts at the AtX and spans past the 'H' box.
     // The AtX of the next letter 'e' should start where this box ends but it does not. it starts little bit before that
     // this might be a problem with the projection. 
     
@@ -295,6 +328,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         
         int c_x1, c_y1, c_x2, c_y2;
         stbtt_GetCodepointBitmapBox(&FontInfo, CharData.Codepoint, Font->scale, Font->scale, &c_x1, &c_y1, &c_x2, &c_y2);
+        
         
         int advance,lsb;
         stbtt_GetCodepointHMetrics(&FontInfo, CharData.Codepoint, &advance, &lsb);
@@ -318,7 +352,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
             DebugEntry(DEBUG_POINT, Origin.x, Origin.y, 2, 2, 3); // yellow Dot
         }
         
-        //AtX += c_x2; 
+        //AtX += CharData.Width/2; 
         int ScaleAdvance =  advance * Font->scale;
         AtX += ScaleAdvance;
         //AtX += (ScaleAdvance/2);
@@ -335,6 +369,22 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         
         
     }
+    
+    float TestX = 67;
+    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
+    TestX += 41;
+    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
+    TestX += 31;
+    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
+    TestX += 15;
+    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
+    TestX += 34;
+    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
+    
+    
+    
+    
+    
     
     glDeleteTextures(1, &Texture);
     glDeleteVertexArrays(1, &QuadVAO);
@@ -420,6 +470,14 @@ MainWindowProc(HWND Window,
                 Controls.PointToggle = !Controls.PointToggle; 
             
         }break;
+        case WM_LBUTTONDOWN: 
+        {
+            LeftMouse = 1;
+        }break;
+        case WM_LBUTTONUP: 
+        {
+            LeftMouse = 0;
+        }break;
         default:
         {
             Result = DefWindowProc(Window, Message, WParam, LParam);
@@ -461,6 +519,24 @@ int WinMain(HINSTANCE Instance,
         
         Win32InitOpenGL(Window);
         
+        
+        Win32InitOpenGL(Window);
+        
+        ImGui::CreateContext();
+        
+        win32_windowdim Dim = Win32GetWindowDim(Window);
+        
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        io.DisplaySize = {(float)ScreenWidth, (float)ScreenHeight};
+        float FrameRate = 60;
+        float dt = 1 / FrameRate; 
+        io.DeltaTime = dt;
+        
+        ImGui_ImplOpenGL3_Init(0);
+        ImGui::StyleColorsDark();
+        bool show_demo_window = true;
+        
+        
         font_asset Font;
         GetFont(&FontArena, &Font);
         
@@ -484,6 +560,26 @@ int WinMain(HINSTANCE Instance,
                 DispatchMessage(&Message);
             }
             
+            Dim = Win32GetWindowDim(Window);
+            
+            POINT Point = {}; 
+            GetCursorPos(&Point);
+            
+            io.MousePos = {(float)Point.x - Dim.x - 5, (float)Point.y - Dim.y + 5};
+            
+            //io.MouseDown[0] = 0;
+            io.MouseDown[0] = LeftMouse;
+            
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui::NewFrame();
+            
+            // NOTE(Barret5Ocal): GUI stuff
+            {
+                
+            }
+            
+            ImGui::Render();
+            
             glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -491,6 +587,8 @@ int WinMain(HINSTANCE Instance,
             DrawString(ShaderProgram, &Font, "Helgo", {400.0f, 400.0f});
             DrawDebugGraphics(DebugShaderProgram);
             DebugIndex = 0;
+            
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
         }
     }

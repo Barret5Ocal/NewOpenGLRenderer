@@ -14,6 +14,20 @@ void *GetAnyGLFuncAddress(const char *name);
 #define GL_CLAMP_TO_EDGE                  0x812F
 #define GL_CLAMP_TO_BORDER                0x812D
 #define GL_MIRROR_CLAMP_TO_EDGE           0x8743
+#define GL_ACTIVE_TEXTURE                 0x84E0
+#define GL_CURRENT_PROGRAM                0x8B8D
+#define GL_SAMPLER_BINDING                0x8919
+#define GL_ARRAY_BUFFER_BINDING           0x8894
+#define GL_VERTEX_ARRAY_BINDING           0x85B5
+#define GL_BLEND_SRC_RGB                  0x80C9
+#define GL_BLEND_DST_RGB                  0x80C8
+#define GL_BLEND_SRC_ALPHA                0x80CB
+#define GL_BLEND_DST_ALPHA                0x80CA
+#define GL_BLEND_EQUATION_RGB             0x8009
+#define GL_BLEND_EQUATION_ALPHA           0x883D
+#define GL_FUNC_ADD                       0x8006
+#define GL_STREAM_DRAW                    0x88E0
+#define GL_ELEMENT_ARRAY_BUFFER           0x8893
 
 #include <stddef.h>
 typedef ptrdiff_t GLsizeiptr;
@@ -55,6 +69,17 @@ typedef void (APIENTRYP PFNGLVERTEXATTRIBDIVISORPROC) (GLuint index, GLuint divi
 typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSPROC) (GLsizei n, const GLuint *arrays);
 typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
 
+typedef void (APIENTRYP PFNGLBLENDEQUATIONPROC) (GLenum mode);
+typedef void (APIENTRYP PFNGLBINDSAMPLERPROC) (GLuint unit, GLuint sampler);
+typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSPROC) (GLsizei n, const GLuint *arrays);
+typedef void (APIENTRYP PFNGLBLENDEQUATIONSEPARATEPROC) (GLenum modeRGB, GLenum modeAlpha);
+typedef void (APIENTRYP PFNGLBLENDFUNCSEPARATEPROC) (GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha);
+typedef GLint (APIENTRYP PFNGLGETATTRIBLOCATIONPROC) (GLuint program, const GLchar *name);
+typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
+typedef void (APIENTRYP PFNGLDELETEPROGRAMPROC) (GLuint program);
+
+
+
 PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
 PFNGLBINDVERTEXARRAYPROC glBindVertexArray; 
 PFNGLGENBUFFERSPROC glGenBuffers; 
@@ -88,6 +113,14 @@ PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced;
 PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor;
 PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
 PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+
+
+PFNGLBLENDEQUATIONPROC glBlendEquation;
+PFNGLBINDSAMPLERPROC glBindSampler;
+PFNGLBLENDEQUATIONSEPARATEPROC glBlendEquationSeparate;
+PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
+PFNGLGETATTRIBLOCATIONPROC glGetAttribLocation;
+PFNGLDELETEPROGRAMPROC glDeleteProgram;
 
 void GetGLPointers()
 {
@@ -124,6 +157,15 @@ void GetGLPointers()
     glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)GetAnyGLFuncAddress("glVertexAttribDivisor");
     glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYSPROC) GetAnyGLFuncAddress("glDeleteVertexArrays");
     glDeleteBuffers = (PFNGLDELETEBUFFERSPROC ) GetAnyGLFuncAddress("glDeleteBuffers");
+    
+    glBlendEquation = (PFNGLBLENDEQUATIONPROC) GetAnyGLFuncAddress("glBlendEquation");
+    glBindSampler = (PFNGLBINDSAMPLERPROC) GetAnyGLFuncAddress("glBindSampler");
+    glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYSPROC) GetAnyGLFuncAddress("glDeleteVertexArrays");
+    glBlendEquationSeparate = (PFNGLBLENDEQUATIONSEPARATEPROC) GetAnyGLFuncAddress("glBlendEquationSeparate");
+    glBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC) GetAnyGLFuncAddress("glBlendFuncSeparate");
+    glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC) GetAnyGLFuncAddress("glGetAttribLocation");
+    glDeleteBuffers = (PFNGLDELETEBUFFERSPROC) GetAnyGLFuncAddress("glDeleteBuffers");
+    glDeleteProgram = (PFNGLDELETEPROGRAMPROC) GetAnyGLFuncAddress("glDeleteProgram");
     
 }
 
