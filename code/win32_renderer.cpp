@@ -75,6 +75,12 @@ struct win32_windowdim
     //int DisplayWidth, DisplayHeight; 
 };
 
+struct debug_edit
+{
+    char *Text;
+    float Scale = 1.0f;
+};
+
 
 win32_windowdim Win32GetWindowDim(HWND Window)
 {
@@ -256,7 +262,7 @@ void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
     
 }
 
-void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
+void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, debug_edit *DEdit)
 {
     glUseProgram(ShaderProgram);
     
@@ -325,6 +331,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline)
         glGenerateMipmap(GL_TEXTURE_2D);
         
         v2 Scale = {(float)CharData.Width,(float)CharData.Height};
+        Scale *= DEdit->Scale; 
         
         int c_x1, c_y1, c_x2, c_y2;
         stbtt_GetCodepointBitmapBox(&FontInfo, CharData.Codepoint, Font->scale, Font->scale, &c_x1, &c_y1, &c_x2, &c_y2);
@@ -470,6 +477,7 @@ MainWindowProc(HWND Window,
                 Controls.PointToggle = !Controls.PointToggle; 
             
         }break;
+        
         case WM_LBUTTONDOWN: 
         {
             LeftMouse = 1;
@@ -497,6 +505,7 @@ int WinMain(HINSTANCE Instance,
     WindowClass.lpfnWndProc = MainWindowProc;
     WindowClass.hInstance = Instance;
     WindowClass.lpszClassName = "OpenGlPratice";
+    WindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
     
     if(RegisterClass(&WindowClass))
     {
@@ -527,10 +536,13 @@ int WinMain(HINSTANCE Instance,
         win32_windowdim Dim = Win32GetWindowDim(Window);
         
         ImGuiIO& io = ImGui::GetIO(); (void)io;
+        
         io.DisplaySize = {(float)ScreenWidth, (float)ScreenHeight};
         float FrameRate = 60;
         float dt = 1 / FrameRate; 
         io.DeltaTime = dt;
+        
+        
         
         ImGui_ImplOpenGL3_Init(0);
         ImGui::StyleColorsDark();
@@ -549,6 +561,13 @@ int WinMain(HINSTANCE Instance,
         GLuint DebugShaderProgram = CreateShaderProgram(DebugVertexShaderCode.Memory, DebugVertexShaderCode.Size, DebugFragShaderCode.Memory, DebugFragShaderCode.Size);
         
         
+        
+        bool TextEditWindow = 1;
+        
+        debug_edit DEdit;
+        DEdit.Text = (char *)malloc(sizeof(char) * 32);
+        
+        DEdit.Text = "Helgo";
         
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, Running, 60))
@@ -573,9 +592,23 @@ int WinMain(HINSTANCE Instance,
             ImGui_ImplOpenGL3_NewFrame();
             ImGui::NewFrame();
             
+            //ImGui::PushAllowKeyboardFocus(true);
+            io.WantCaptureKeyboard = true;
+            io.WantTextInput = true;
+            
+            
             // NOTE(Barret5Ocal): GUI stuff
+            if(TextEditWindow)
             {
+                ImGui::Begin("Text Edit", &TextEditWindow, 2);
                 
+                //ImGui::InputText("string", DEdit.Text, ArrayCount(DEdit.Text));
+                //ImGui::Text("Scale Edit");
+                ImGui::SliderFloat("Scale", &DEdit.Scale, -10.0f, 10.0f);
+                
+                
+                
+                ImGui::End();
             }
             
             ImGui::Render();
@@ -584,7 +617,7 @@ int WinMain(HINSTANCE Instance,
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Helgo", {400.0f, 400.0f});
+            DrawString(ShaderProgram, &Font, DEdit.Text, {400.0f, 400.0f}, &DEdit);
             DrawDebugGraphics(DebugShaderProgram);
             DebugIndex = 0;
             
