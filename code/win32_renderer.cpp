@@ -80,7 +80,10 @@ struct debug_edit
     char *Text;
     float Scale = 1.0f;
     float AdvanceScale = 1.0f; 
-    float AtXAdd = 0.0f; 
+    int AddXOffset = 0; 
+    int Addx1 = 0;
+    int Addx2 = 0;
+    int Addlsb = 0;
 };
 
 
@@ -367,7 +370,31 @@ int WinMain(HINSTANCE Instance,
                 {
                     DEdit.Scale = 1.0f;
                     DEdit.AdvanceScale = 1.0f;
+                    DEdit.AddXOffset = 0; 
+                    DEdit.Addx1 = 0;
+                    DEdit.Addx2 = 0;
+                    DEdit.Addlsb = 0;
                 }
+                
+                ImGui::BeginGroup();
+                if(ImGui::Button("Toggle XOffset")){DEdit.AddXOffset = DEdit.AddXOffset ? 0 : 1;}
+                if(DEdit.AddXOffset){ImGui::Text("On");}else {ImGui::Text("Off");}
+                ImGui::EndGroup();
+                ImGui::SameLine();
+                ImGui::BeginGroup();
+                if(ImGui::Button("Toggle x1")){DEdit.Addx1 = DEdit.Addx1 ? 0 : 1;}
+                if(DEdit.Addx1){ImGui::Text("On");}else {ImGui::Text("Off");}
+                ImGui::EndGroup();
+                ImGui::SameLine();
+                ImGui::BeginGroup();
+                if(ImGui::Button("Toggle x2")){DEdit.Addx2 = DEdit.Addx2 ? 0 : 1;}
+                if(DEdit.Addx2){ImGui::Text("On");}else {ImGui::Text("Off");}
+                ImGui::EndGroup();
+                ImGui::SameLine();
+                ImGui::BeginGroup();
+                if(ImGui::Button("Toggle lsb")){DEdit.Addlsb = DEdit.Addlsb ? 0 : 1;}
+                if(DEdit.Addlsb){ImGui::Text("On");}else {ImGui::Text("Off");}
+                ImGui::EndGroup();
                 
                 ImGui::End();
                 

@@ -197,7 +197,8 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         
         float ScaleLSB = CharData.lsb  * Font->scale;
         
-        v2 Position = v2{AtX + DEdit->AtXAdd, AtY + baseline + CharData.y1 + CharData.y2};
+        
+        v2 Position = v2{AtX + ScaleLSB, AtY + baseline + CharData.y1 + CharData.y2};
         DrawCharacter(ShaderProgram, Position, Scale);
         
         
@@ -212,6 +213,14 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
             
             v2 Origin = {TopLeft.x - ScaleLSB, TopLeft.y - CharData.y1 * 2}; 
             DebugEntry(DEBUG_POINT, Origin.x, Origin.y, 2, 2, 3); // yellow Dot
+        }
+        
+        {// NOTE(Barret5Ocal): Debug stuff
+            AtX += ScaleLSB * DEdit->Addlsb; 
+            AtX += CharData.x1 * DEdit->Addx1; 
+            AtX += CharData.x2 * DEdit->Addx2; 
+            AtX += CharData.XOffset * DEdit->AddXOffset; 
+            
         }
         
         //AtX += CharData.Width/2; 
