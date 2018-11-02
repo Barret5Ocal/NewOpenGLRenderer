@@ -307,8 +307,8 @@ int WinMain(HINSTANCE Instance,
         font_asset Font;
         GetFont(&FontArena, &Font);
         
-        read_results VertexShaderCode = Win32GetFileContents("..\\code\\vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
-        read_results FragShaderCode = Win32GetFileContents("..\\code\\frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
+        read_results VertexShaderCode = Win32GetFileContents("..\\code\\vertex_shader2.glsl");//"..\\project\\code\\vertex_shader.glsl");
+        read_results FragShaderCode = Win32GetFileContents("..\\code\\frag_shader2.glsl");//"..\\project\\code\\frag_shader.glsl"); 
         GLuint ShaderProgram = CreateShaderProgram(VertexShaderCode.Memory, VertexShaderCode.Size, FragShaderCode.Memory, FragShaderCode.Size);
         
         read_results DebugVertexShaderCode = Win32GetFileContents("..\\code\\debug_vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");

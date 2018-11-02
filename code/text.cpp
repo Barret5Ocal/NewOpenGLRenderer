@@ -13,6 +13,7 @@ struct character_asset
     int32 advance;
     int32 lsb;
     uint8 *Data;
+    uint32 DataID; 
 };
 
 struct font_asset
@@ -66,6 +67,26 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         
         uint8 *Data = (uint8 *)PushArray(Arena, Width * Height * 4, uint8); 
         
+        GLuint texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RED,
+            Width,
+            Height,
+            0,
+            GL_RED,
+            GL_UNSIGNED_BYTE,
+            Data
+            );
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
         FontAsset->Character[Index - '!'] = {(char)Index, Width, Height, XOffset, YOffset, c_x1, c_x2, c_y1, c_y2, advance, lsb, Data};
         
         uint8 *Source = Character; 
@@ -88,6 +109,8 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
             DestRow += (Width * 4); 
         }
         stbtt_FreeBitmap(Character, 0);
+        
+        
     }
 }
 
@@ -126,10 +149,12 @@ void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
 
 void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, debug_edit *DEdit)
 {
-    glUseProgram(ShaderProgram);
     
     real32 AtX = 67.0f;
     real32 AtY = 128.0f;
+    
+#if 0
+    glUseProgram(ShaderProgram);
     
     //real32 AtX = 0.0f;
     //real32 AtY = 0.0f;
@@ -262,4 +287,64 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     glDeleteBuffers(1, &VBO);
     
     BoxDebug = 6; 
+    
+#else 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+    
+    m4 Ortho;
+    gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
+    
+    GLuint VAO, VBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);      
+    
+    glUseProgram(ShaderProgram);
+    
+    glUniform3f(glGetUniformLocation(ShaderProgram, "textColor"), 0.0f, 0.0f, 0.0f);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(VAO);
+    
+    for(char *Char = Text;
+        *Char;
+        Char++)
+    {
+        character_asset CharData = GetCharacter(Font, *Char);
+        
+        float xpos = AtX + CharData.lsb * Font->scale;
+        float ypos = AtY - (CharData.Height - CharData.YOffset) * Font->scale;
+        
+        float w = CharData.Width * Font->scale;
+        float h = CharData.Height * Font->scale;
+        
+        float vertices[6][4] = {
+            { xpos,     ypos + h,   0.0, 0.0 },            
+            { xpos,     ypos,       0.0, 1.0 },
+            { xpos + w, ypos,       1.0, 1.0 },
+            
+            { xpos,     ypos + h,   0.0, 0.0 },
+            { xpos + w, ypos,       1.0, 1.0 },
+            { xpos + w, ypos + h,   1.0, 0.0 }           
+        };
+        
+        glBindTexture(GL_TEXTURE_2D, CharData.DataID);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); 
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // Render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        
+        AtX += CharData.advance; 
+    }
+    
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+#endif 
 }

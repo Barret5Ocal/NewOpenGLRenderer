@@ -28,10 +28,17 @@ void *GetAnyGLFuncAddress(const char *name);
 #define GL_FUNC_ADD                       0x8006
 #define GL_STREAM_DRAW                    0x88E0
 #define GL_ELEMENT_ARRAY_BUFFER           0x8893
+#define GL_DYNAMIC_DRAW                   0x88E8
 
 #include <stddef.h>
 typedef ptrdiff_t GLsizeiptr;
 typedef char GLchar;
+
+//#include <KHR/khrplatform.h>
+typedef signed   long long int khronos_ssize_t;
+typedef signed   long long int khronos_intptr_t;
+typedef khronos_ssize_t GLsizeiptr;
+typedef khronos_intptr_t GLintptr;
 
 #define APIENTRYP WINAPI *
 typedef BOOL WINAPI wgl_swap_interval_ext(int interval);
@@ -77,7 +84,7 @@ typedef void (APIENTRYP PFNGLBLENDFUNCSEPARATEPROC) (GLenum sfactorRGB, GLenum d
 typedef GLint (APIENTRYP PFNGLGETATTRIBLOCATIONPROC) (GLuint program, const GLchar *name);
 typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
 typedef void (APIENTRYP PFNGLDELETEPROGRAMPROC) (GLuint program);
-
+typedef void (APIENTRYP PFNGLBUFFERSUBDATAPROC) (GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 
 
 PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
@@ -113,7 +120,7 @@ PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced;
 PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor;
 PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
 PFNGLDELETEBUFFERSPROC glDeleteBuffers;
-
+PFNGLBUFFERSUBDATAPROC glBufferSubData;
 
 PFNGLBLENDEQUATIONPROC glBlendEquation;
 PFNGLBINDSAMPLERPROC glBindSampler;
@@ -156,8 +163,8 @@ void GetGLPointers()
     glDrawArraysInstanced = (PFNGLDRAWARRAYSINSTANCEDPROC)GetAnyGLFuncAddress("glDrawArraysInstanced");
     glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)GetAnyGLFuncAddress("glVertexAttribDivisor");
     glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYSPROC) GetAnyGLFuncAddress("glDeleteVertexArrays");
-    glDeleteBuffers = (PFNGLDELETEBUFFERSPROC ) GetAnyGLFuncAddress("glDeleteBuffers");
-    
+    glDeleteBuffers = (PFNGLDELETEBUFFERSPROC) GetAnyGLFuncAddress("glDeleteBuffers");
+    glBufferSubData = (PFNGLBUFFERSUBDATAPROC) GetAnyGLFuncAddress("glBufferSubData");
     glBlendEquation = (PFNGLBLENDEQUATIONPROC) GetAnyGLFuncAddress("glBlendEquation");
     glBindSampler = (PFNGLBINDSAMPLERPROC) GetAnyGLFuncAddress("glBindSampler");
     glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYSPROC) GetAnyGLFuncAddress("glDeleteVertexArrays");
