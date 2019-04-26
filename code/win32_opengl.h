@@ -34,10 +34,10 @@ void *GetAnyGLFuncAddress(const char *name);
 typedef ptrdiff_t GLsizeiptr;
 typedef char GLchar;
 
-//#include <KHR/khrplatform.h>
-typedef signed   long long int khronos_ssize_t;
-typedef signed   long long int khronos_intptr_t;
-typedef khronos_ssize_t GLsizeiptr;
+#include "KHR/khrplatform.h"
+//typedef signed   long long int khronos_ssize_t;
+//typedef signed   long long int khronos_intptr_t;
+//typedef khronos_ssize_t GLsizeiptr;
 typedef khronos_intptr_t GLintptr;
 
 #define APIENTRYP WINAPI *

@@ -117,6 +117,7 @@ void DrawDebugBox(GLuint DebugShader, debug_draw_entry Entry)
     GLuint VBO;
     
     
+#if 0 
     vertex Vertices[] = { 
         // Pos      // Tex
         {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
@@ -127,6 +128,18 @@ void DrawDebugBox(GLuint DebugShader, debug_draw_entry Entry)
         {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
         {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
     };
+#else 
+    vertex Vertices[] = { 
+        // Pos      // Tex
+        {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+        {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, 
+        
+        {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+        {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}
+    };
+#endif 
     
     glGenVertexArrays(1, &QuadVAO);
     glGenBuffers(1, &VBO);

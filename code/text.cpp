@@ -153,7 +153,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     real32 AtX = 67.0f;
     real32 AtY = 128.0f;
     
-#if 0
+#if 1
     glUseProgram(ShaderProgram);
     
     //real32 AtX = 0.0f;
@@ -164,6 +164,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     GLuint QuadVAO;
     GLuint VBO;
     
+#if 0 
     vertex Vertices[] = { 
         // Pos      // Tex
         {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
@@ -174,6 +175,19 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
         {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
     };
+#else 
+    vertex Vertices[] = { 
+        // Pos      // Tex
+        {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+        {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, 
+        
+        {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+        {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}
+    };
+#endif 
+    
     
     glGenVertexArrays(1, &QuadVAO);
     glGenBuffers(1, &VBO);
@@ -223,7 +237,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         float ScaleLSB = CharData.lsb  * Font->scale;
         
         
-        v2 Position = v2{AtX + ScaleLSB, AtY + baseline + CharData.y1 + CharData.y2};
+        v2 Position = v2{AtX, AtY + baseline + CharData.y1 + CharData.y2};
         DrawCharacter(ShaderProgram, Position, Scale);
         
         
@@ -249,7 +263,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         }
         
         //AtX += CharData.Width/2; 
-        int ScaleAdvance =  CharData.advance * Font->scale * DEdit->AdvanceScale;
+        int ScaleAdvance = CharData.Width;//CharData.advance * Font->scale * DEdit->AdvanceScale;
         AtX += ScaleAdvance;
         //AtX += (ScaleAdvance/2);
         //AtX += c_x1 * 5; 
@@ -294,6 +308,8 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     
     m4 Ortho;
     gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
+    
+    
     
     GLuint VAO, VBO;
     glGenVertexArrays(1, &VAO);

@@ -307,12 +307,12 @@ int WinMain(HINSTANCE Instance,
         font_asset Font;
         GetFont(&FontArena, &Font);
         
-        read_results VertexShaderCode = Win32GetFileContents("..\\code\\vertex_shader2.glsl");//"..\\project\\code\\vertex_shader.glsl");
-        read_results FragShaderCode = Win32GetFileContents("..\\code\\frag_shader2.glsl");//"..\\project\\code\\frag_shader.glsl"); 
+        read_results VertexShaderCode = Win32GetFileContents("..\\project\\code\\vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
+        read_results FragShaderCode = Win32GetFileContents("..\\project\\code\\frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
         GLuint ShaderProgram = CreateShaderProgram(VertexShaderCode.Memory, VertexShaderCode.Size, FragShaderCode.Memory, FragShaderCode.Size);
         
-        read_results DebugVertexShaderCode = Win32GetFileContents("..\\code\\debug_vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
-        read_results DebugFragShaderCode = Win32GetFileContents("..\\code\\debug_frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
+        read_results DebugVertexShaderCode = Win32GetFileContents("..\\project\\code\\debug_vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
+        read_results DebugFragShaderCode = Win32GetFileContents("..\\project\\code\\debug_frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
         GLuint DebugShaderProgram = CreateShaderProgram(DebugVertexShaderCode.Memory, DebugVertexShaderCode.Size, DebugFragShaderCode.Memory, DebugFragShaderCode.Size);
         
         
@@ -447,6 +447,7 @@ int WinMain(HINSTANCE Instance,
             
             DrawString(ShaderProgram, &Font, DEdit.Text, {400.0f, 400.0f}, &DEdit);
             DrawDebugGraphics(DebugShaderProgram);
+            
             DebugIndex = 0;
             
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
