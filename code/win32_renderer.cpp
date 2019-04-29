@@ -250,6 +250,7 @@ MainWindowProc(HWND Window,
     return Result; 
 }
 
+
 int WinMain(HINSTANCE Instance, 
             HINSTANCE PrevInstance,
             LPSTR CmdLine,
@@ -322,7 +323,9 @@ int WinMain(HINSTANCE Instance,
         debug_edit DEdit;
         DEdit.Text = (char *)malloc(sizeof(char) * 32);
         
-        DEdit.Text = "Helgo";
+        DEdit.Text = "Helgo Dark";
+        
+        int DebugGraphicsToggle = 1;
         
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, Running, 60))
@@ -395,6 +398,12 @@ int WinMain(HINSTANCE Instance,
                 if(ImGui::Button("Toggle lsb")){DEdit.Addlsb = DEdit.Addlsb ? 0 : 1;}
                 if(DEdit.Addlsb){ImGui::Text("On");}else {ImGui::Text("Off");}
                 ImGui::EndGroup();
+                ImGui::BeginGroup();
+                if(ImGui::Button("Toggle Debug Graphics")){DebugGraphicsToggle = DebugGraphicsToggle ? 0 : 1;}
+                if(DebugGraphicsToggle){ImGui::Text("On");}else {ImGui::Text("Off");}
+                ImGui::EndGroup();
+                
+                
                 
                 ImGui::End();
                 
@@ -415,24 +424,28 @@ int WinMain(HINSTANCE Instance,
                 char *Char = DEdit.Text;
                 while (*Char)
                 {
-                    ImGui::BeginGroup();                                                   
-                    character_asset CharData = GetCharacter(&Font, *Char);
-                    ImGui::Text(&CharData.Codepoint);
-                    ImGui::Text("Width: %d", CharData.Width);
-                    ImGui::Text("Height: %d", CharData.Height);
-                    ImGui::Text("XOffset: %d", CharData.XOffset);
-                    ImGui::Text("YOffset: %d", CharData.YOffset);
-                    ImGui::Text("x1: %d", CharData.x1);
-                    ImGui::Text("x2: %d", CharData.x2);
-                    ImGui::Text("y1: %d", CharData.y1);
-                    ImGui::Text("y2: %d", CharData.y2);
-                    ImGui::Text("advance: %f", CharData.advance * Font.scale);
-                    ImGui::Text("lsb: %f", CharData.lsb * Font.scale);
-                    ImGui::EndGroup();
-                    
-                    ImGui::SameLine();
-                    //ImGui::EndGroup();
+                    if(*Char != ' ')
+                    {
+                        ImGui::BeginGroup();                                                   
+                        character_asset CharData = GetCharacter(&Font, *Char);
+                        ImGui::Text(&CharData.Codepoint);
+                        ImGui::Text("Width: %d", CharData.Width);
+                        ImGui::Text("Height: %d", CharData.Height);
+                        ImGui::Text("XOffset: %d", CharData.XOffset);
+                        ImGui::Text("YOffset: %d", CharData.YOffset);
+                        ImGui::Text("x1: %d", CharData.x1);
+                        ImGui::Text("x2: %d", CharData.x2);
+                        ImGui::Text("y1: %d", CharData.y1);
+                        ImGui::Text("y2: %d", CharData.y2);
+                        ImGui::Text("advance: %f", CharData.advance * Font.scale);
+                        ImGui::Text("lsb: %f", CharData.lsb * Font.scale);
+                        ImGui::EndGroup();
+                        
+                        ImGui::SameLine();
+                        //ImGui::EndGroup();
+                    }
                     Char++;
+                    
                 }
                 
                 ImGui::End();
@@ -446,7 +459,8 @@ int WinMain(HINSTANCE Instance,
             glClear(GL_COLOR_BUFFER_BIT);
             
             DrawString(ShaderProgram, &Font, DEdit.Text, {400.0f, 400.0f}, &DEdit);
-            DrawDebugGraphics(DebugShaderProgram);
+            if(DebugGraphicsToggle)
+                DrawDebugGraphics(DebugShaderProgram);
             
             DebugIndex = 0;
             

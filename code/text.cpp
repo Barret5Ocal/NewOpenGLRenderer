@@ -153,7 +153,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     real32 AtX = 67.0f;
     real32 AtY = 128.0f;
     
-#if 1
+    
     glUseProgram(ShaderProgram);
     
     //real32 AtX = 0.0f;
@@ -164,18 +164,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     GLuint QuadVAO;
     GLuint VBO;
     
-#if 0 
-    vertex Vertices[] = { 
-        // Pos      // Tex
-        {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-        {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, 
-        
-        {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-        {{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}
-    };
-#else 
+    
     vertex Vertices[] = { 
         // Pos      // Tex
         {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
@@ -186,7 +175,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
         {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}
     };
-#endif 
+    
     
     
     glGenVertexArrays(1, &QuadVAO);
@@ -227,74 +216,60 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         *Char;
         Char++)
     {
-        character_asset CharData = GetCharacter(Font, *Char);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CharData.Width, CharData.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, CharData.Data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        
-        v2 Scale = {(float)CharData.Width,(float)CharData.Height};
-        Scale *= DEdit->Scale; 
-        
-        float ScaleLSB = CharData.lsb  * Font->scale;
-        
-        
-        v2 Position = v2{AtX, AtY + baseline + CharData.y1 + CharData.y2};
-        DrawCharacter(ShaderProgram, Position, Scale);
-        
-        
-        // NOTE(Barret5Ocal): Debug Graphics (Also, remember that debug graphics sometimes lies to you)
+        if(*Char != ' ')
         {
-            DebugEntry(DEBUG_POINT, AtX, AtY, 2, 2, 0); //RED Dot
+            character_asset CharData = GetCharacter(Font, *Char);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CharData.Width, CharData.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, CharData.Data);
+            glGenerateMipmap(GL_TEXTURE_2D);
             
-            DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1); // GREEN Dot
+            v2 Scale = {(float)CharData.Width,(float)CharData.Height};
+            Scale *= DEdit->Scale; 
             
-            v2 TopLeft = {Position.x - CharData.Width, Position.y - CharData.Height}; 
-            DebugEntry(DEBUG_POINT, TopLeft.x, TopLeft.y, 2, 2, 2); // blue Dot
+            float ScaleLSB = CharData.lsb  * Font->scale;
             
-            v2 Origin = {TopLeft.x - ScaleLSB, TopLeft.y - CharData.y1 * 2}; 
-            DebugEntry(DEBUG_POINT, Origin.x, Origin.y, 2, 2, 3); // yellow Dot
+            
+            v2 Position = v2{AtX, AtY + baseline + CharData.y1};// + CharData.y2};
+            DrawCharacter(ShaderProgram, Position, Scale);
+            
+            
+            // NOTE(Barret5Ocal): Debug Graphics (Also, remember that debug graphics sometimes lies to you)
+            {
+                DebugEntry(DEBUG_POINT, AtX, AtY, 2, 2, 0); //RED Dot
+                
+                DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1); // GREEN Dot
+                
+                v2 TopLeft = {Position.x - CharData.Width, Position.y - CharData.Height}; 
+                DebugEntry(DEBUG_POINT, TopLeft.x, TopLeft.y, 2, 2, 2); // blue Dot
+                
+                v2 Origin = {TopLeft.x - ScaleLSB, TopLeft.y - CharData.y1 * 2}; 
+                DebugEntry(DEBUG_POINT, Origin.x, Origin.y, 2, 2, 3); // yellow Dot
+            }
+            
+            {// NOTE(Barret5Ocal): Debug stuff
+                AtX += ScaleLSB * DEdit->Addlsb; 
+                AtX += CharData.x1 * DEdit->Addx1; 
+                AtX += CharData.x2 * DEdit->Addx2; 
+                AtX += CharData.XOffset * DEdit->AddXOffset; 
+                
+            }
+            
+            int ScaleAdvance = CharData.Width; //CharData.advance * Font->scale * DEdit->AdvanceScale;
+            AtX += ScaleAdvance;
+            float KernAdvance = 0;
+            char Char1 = *Char; 
+            char Char2 = *(Char + 1);
+            if(Char + 1 || *(Char + 1) == ' ')
+                KernAdvance = stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
+            
+            float ExtraAdvance = Font->scale * KernAdvance; 
+            AtX += ExtraAdvance; 
         }
-        
-        {// NOTE(Barret5Ocal): Debug stuff
-            AtX += ScaleLSB * DEdit->Addlsb; 
-            AtX += CharData.x1 * DEdit->Addx1; 
-            AtX += CharData.x2 * DEdit->Addx2; 
-            AtX += CharData.XOffset * DEdit->AddXOffset; 
-            
+        else 
+        {
+            AtX += 33;
         }
-        
-        //AtX += CharData.Width/2; 
-        int ScaleAdvance = CharData.Width;//CharData.advance * Font->scale * DEdit->AdvanceScale;
-        AtX += ScaleAdvance;
-        //AtX += (ScaleAdvance/2);
-        //AtX += c_x1 * 5; 
-        //AtX += ScaleLSB;
-        float KernAdvance = 0;
-        char Char1 = *Char; 
-        char Char2 = *(Char + 1);
-        if(Char + 1)
-            KernAdvance =stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
-        
-        float ExtraAdvance = Font->scale * KernAdvance; 
-        AtX += ExtraAdvance; 
-        
         
     }
-    
-    float TestX = 67;
-    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
-    TestX += 41;
-    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
-    TestX += 31;
-    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
-    TestX += 15;
-    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
-    TestX += 34;
-    DebugEntry(DEBUG_POINT, TestX, 200, 2, 2, 4); //RED Dot
-    
-    
-    
-    
-    
     
     glDeleteTextures(1, &Texture);
     glDeleteVertexArrays(1, &QuadVAO);
@@ -302,65 +277,4 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     
     BoxDebug = 6; 
     
-#else 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
-    
-    m4 Ortho;
-    gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
-    
-    
-    
-    GLuint VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);      
-    
-    glUseProgram(ShaderProgram);
-    
-    glUniform3f(glGetUniformLocation(ShaderProgram, "textColor"), 0.0f, 0.0f, 0.0f);
-    glActiveTexture(GL_TEXTURE0);
-    glBindVertexArray(VAO);
-    
-    for(char *Char = Text;
-        *Char;
-        Char++)
-    {
-        character_asset CharData = GetCharacter(Font, *Char);
-        
-        float xpos = AtX + CharData.lsb * Font->scale;
-        float ypos = AtY - (CharData.Height - CharData.YOffset) * Font->scale;
-        
-        float w = CharData.Width * Font->scale;
-        float h = CharData.Height * Font->scale;
-        
-        float vertices[6][4] = {
-            { xpos,     ypos + h,   0.0, 0.0 },            
-            { xpos,     ypos,       0.0, 1.0 },
-            { xpos + w, ypos,       1.0, 1.0 },
-            
-            { xpos,     ypos + h,   0.0, 0.0 },
-            { xpos + w, ypos,       1.0, 1.0 },
-            { xpos + w, ypos + h,   1.0, 0.0 }           
-        };
-        
-        glBindTexture(GL_TEXTURE_2D, CharData.DataID);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        // Render quad
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        
-        AtX += CharData.advance; 
-    }
-    
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-#endif 
 }
