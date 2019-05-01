@@ -23,8 +23,6 @@ typedef gbQuat quaternion;
 #define STB_SPRINTF_IMPLEMENTATION
 #include "include\stb_sprintf.h"
 
-//#define STB_TRUETYPE_IMPLEMENTATION
-//#include "include\stb_truetype.h"
 
 #include <stdint.h>
 typedef int8_t int8;
@@ -58,6 +56,7 @@ typedef double real64;
 
 #include "win32_opengl.h"
 
+#if IMGUI
 #include "include\imgui.cpp"
 #include "include\imgui.h"
 #include "include\imgui_demo.cpp"
@@ -65,6 +64,11 @@ typedef double real64;
 #include "include\imgui_internal.h"
 #include "include\imconfig.h"
 #include "include\imgui_impl_opengl3.cpp"
+#else 
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "include\stb_truetype.h"
+
+#endif
 
 int LeftMouse = 0; 
 
@@ -285,12 +289,15 @@ int WinMain(HINSTANCE Instance,
         Win32InitOpenGL(Window);
         
         
-        Win32InitOpenGL(Window);
+        //Win32InitOpenGL(Window);
         
+#if IMGUI
         ImGui::CreateContext();
+#endif 
         
         win32_windowdim Dim = Win32GetWindowDim(Window);
         
+#if IMGUI
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         
         io.DisplaySize = {(float)ScreenWidth, (float)ScreenHeight};
@@ -303,7 +310,7 @@ int WinMain(HINSTANCE Instance,
         ImGui_ImplOpenGL3_Init(0);
         ImGui::StyleColorsDark();
         bool show_demo_window = true;
-        
+#endif 
         
         font_asset Font;
         GetFont(&FontArena, &Font);
@@ -323,9 +330,9 @@ int WinMain(HINSTANCE Instance,
         debug_edit DEdit;
         DEdit.Text = (char *)malloc(sizeof(char) * 32);
         
-        DEdit.Text = "Helgo Dark";
+        DEdit.Text = "Helgo Dark\nstuff";
         
-        int DebugGraphicsToggle = 1;
+        int DebugGraphicsToggle = 0;
         
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, Running, 60))
@@ -339,6 +346,7 @@ int WinMain(HINSTANCE Instance,
             
             Dim = Win32GetWindowDim(Window);
             
+#if IMGUI
             POINT Point = {}; 
             GetCursorPos(&Point);
             
@@ -453,6 +461,7 @@ int WinMain(HINSTANCE Instance,
             }
             
             ImGui::Render();
+#endif 
             
             glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -463,9 +472,11 @@ int WinMain(HINSTANCE Instance,
                 DrawDebugGraphics(DebugShaderProgram);
             
             DebugIndex = 0;
-            
+#if IMGUI
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#endif 
             Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
+            
         }
     }
     return 0; 

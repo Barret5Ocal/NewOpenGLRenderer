@@ -13,7 +13,7 @@ struct character_asset
     int32 advance;
     int32 lsb;
     uint8 *Data;
-    uint32 DataID; 
+    //uint32 DataID; 
 };
 
 struct font_asset
@@ -67,25 +67,15 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         
         uint8 *Data = (uint8 *)PushArray(Arena, Width * Height * 4, uint8); 
         
-        GLuint texture;
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RED,
-            Width,
-            Height,
-            0,
-            GL_RED,
-            GL_UNSIGNED_BYTE,
-            Data
-            );
+        //GLuint texture = 0;
+        //glGenTextures(1, &texture);
+        //glBindTexture(GL_TEXTURE_2D, texture);
+        //glTexImage2D(GL_TEXTURE_2D,0,GL_RED,Width,Height,0,GL_RED,GL_UNSIGNED_BYTE,Data);
         
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         
         FontAsset->Character[Index - '!'] = {(char)Index, Width, Height, XOffset, YOffset, c_x1, c_x2, c_y1, c_y2, advance, lsb, Data};
         
@@ -216,10 +206,13 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         *Char;
         Char++)
     {
-        if(*Char != ' ')
+        if(*Char >= '!' && *Char <= '~')
         {
             character_asset CharData = GetCharacter(Font, *Char);
+            // TODO(Barret5Ocal): this might be causing an error. we are calling a bunch of this stuff when we get the font data. check to see if we are overrunning a buffer or something 
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CharData.Width, CharData.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, CharData.Data);
+            //glBindTexture(GL_TEXTURE_2D, CharData.DataID);
+            
             glGenerateMipmap(GL_TEXTURE_2D);
             
             v2 Scale = {(float)CharData.Width,(float)CharData.Height};
@@ -264,11 +257,15 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
             float ExtraAdvance = Font->scale * KernAdvance; 
             AtX += ExtraAdvance; 
         }
-        else 
+        else if(*Char == ' ')
         {
             AtX += 33;
         }
-        
+        else if(*Char == '\n')
+        {
+            AtX = 67.0f; 
+            AtY += (Font->ascent - Font->descent + Font->lineGap) * Font->scale;
+        }
     }
     
     glDeleteTextures(1, &Texture);
