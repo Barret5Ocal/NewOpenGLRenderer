@@ -467,7 +467,7 @@ int WinMain(HINSTANCE Instance,
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, DEdit.Text, {400.0f, 400.0f}, &DEdit);
+            DrawString(ShaderProgram, &Font, DEdit.Text, {400.0f, 400.0f}, 0.5f, &DEdit);
             if(DebugGraphicsToggle)
                 DrawDebugGraphics(DebugShaderProgram);
             

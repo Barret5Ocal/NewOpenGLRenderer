@@ -137,7 +137,7 @@ void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
     
 }
 
-void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, debug_edit *DEdit)
+void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float FontScale, debug_edit *DEdit)
 {
     
     real32 AtX = 67.0f;
@@ -210,23 +210,25 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         {
             character_asset CharData = GetCharacter(Font, *Char);
             // TODO(Barret5Ocal): this might be causing an error. we are calling a bunch of this stuff when we get the font data. check to see if we are overrunning a buffer or something 
+            // This might also be a problem with the way memory is being allocated. Check the memory arena system 
+            // Also, i'm not getting an error on my home pc
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CharData.Width, CharData.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, CharData.Data);
-            //glBindTexture(GL_TEXTURE_2D, CharData.DataID);
             
             glGenerateMipmap(GL_TEXTURE_2D);
             
-            v2 Scale = {(float)CharData.Width,(float)CharData.Height};
+            v2 Scale = {(float)CharData.Width * FontScale,(float)CharData.Height * FontScale};
             Scale *= DEdit->Scale; 
             
-            float ScaleLSB = CharData.lsb  * Font->scale;
             
             
-            v2 Position = v2{AtX, AtY + baseline + CharData.y1};// + CharData.y2};
+            v2 Position = v2{AtX, AtY + baseline + (CharData.y1 * FontScale)};// + CharData.y2};
             DrawCharacter(ShaderProgram, Position, Scale);
             
             
             // NOTE(Barret5Ocal): Debug Graphics (Also, remember that debug graphics sometimes lies to you)
             {
+                float ScaleLSB = CharData.lsb  * Font->scale;
+                
                 DebugEntry(DEBUG_POINT, AtX, AtY, 2, 2, 0); //RED Dot
                 
                 DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1); // GREEN Dot
@@ -239,6 +241,8 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
             }
             
             {// NOTE(Barret5Ocal): Debug stuff
+                float ScaleLSB = CharData.lsb  * Font->scale;
+                
                 AtX += ScaleLSB * DEdit->Addlsb; 
                 AtX += CharData.x1 * DEdit->Addx1; 
                 AtX += CharData.x2 * DEdit->Addx2; 
@@ -246,7 +250,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
                 
             }
             
-            int ScaleAdvance = CharData.Width; //CharData.advance * Font->scale * DEdit->AdvanceScale;
+            int ScaleAdvance = CharData.Width * FontScale; //CharData.advance * Font->scale * DEdit->AdvanceScale;
             AtX += ScaleAdvance;
             float KernAdvance = 0;
             char Char1 = *Char; 
@@ -254,17 +258,17 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
             if(Char + 1 || *(Char + 1) == ' ')
                 KernAdvance = stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
             
-            float ExtraAdvance = Font->scale * KernAdvance; 
+            float ExtraAdvance = Font->scale * KernAdvance * FontScale; 
             AtX += ExtraAdvance; 
         }
         else if(*Char == ' ')
         {
-            AtX += 33;
+            AtX += 33 * FontScale;
         }
         else if(*Char == '\n')
         {
             AtX = 67.0f; 
-            AtY += (Font->ascent - Font->descent + Font->lineGap) * Font->scale;
+            AtY += (Font->ascent - Font->descent + Font->lineGap) * Font->scale * FontScale;
         }
     }
     
