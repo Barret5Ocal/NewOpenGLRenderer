@@ -18,6 +18,7 @@ typedef gbQuat quaternion;
 #include "include\stb_image.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STBI_MSC_SECURE_CRT
 #include "include\stb_image_write.h"
 
 #define STB_SPRINTF_IMPLEMENTATION
@@ -131,7 +132,7 @@ read_results Win32GetFileContents(char *Filename)
         LARGE_INTEGER FileSize;
         if(GetFileSizeEx(FileHandle, &FileSize))
         {
-            uint32 FileSize32 = FileSize.QuadPart;
+            uint32 FileSize32 = (uint32)FileSize.QuadPart;
             Result.Memory = (char *)VirtualAlloc(0, FileSize32, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
             if(Result.Memory)
             {
@@ -288,16 +289,11 @@ int WinMain(HINSTANCE Instance,
         
         Win32InitOpenGL(Window);
         
-        
-        //Win32InitOpenGL(Window);
-        
-#if IMGUI
-        ImGui::CreateContext();
-#endif 
-        
         win32_windowdim Dim = Win32GetWindowDim(Window);
         
 #if IMGUI
+        ImGui::CreateContext();
+        
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         
         io.DisplaySize = {(float)ScreenWidth, (float)ScreenHeight};
@@ -330,12 +326,12 @@ int WinMain(HINSTANCE Instance,
         debug_edit DEdit;
         DEdit.Text = (char *)malloc(sizeof(char) * 32);
         
-        DEdit.Text = "Helgo Dark\nstuff";
+        DEdit.Text = "Helgo Dark\n";//stuff";
         
         int DebugGraphicsToggle = 0;
         
         time_info TimeInfo = {};
-        while(RunLoop(&TimeInfo, Running, 60))
+        while(RunLoop(&TimeInfo, 60))
         {
             MSG Message;
             while(PeekMessage(&Message, Window, 0, 0, PM_REMOVE))

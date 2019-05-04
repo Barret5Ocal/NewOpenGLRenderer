@@ -139,6 +139,7 @@ void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
 
 void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float FontScale, debug_edit *DEdit)
 {
+    Assert(Font && Font->Character);
     
     real32 AtX = 67.0f;
     real32 AtY = 128.0f;
@@ -209,6 +210,8 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         if(*Char >= '!' && *Char <= '~')
         {
             character_asset CharData = GetCharacter(Font, *Char);
+            
+            Assert(CharData.Data);
             // TODO(Barret5Ocal): this might be causing an error. we are calling a bunch of this stuff when we get the font data. check to see if we are overrunning a buffer or something 
             // This might also be a problem with the way memory is being allocated. Check the memory arena system 
             // Also, i'm not getting an error on my home pc
@@ -250,13 +253,13 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
                 
             }
             
-            int ScaleAdvance = CharData.Width * FontScale; //CharData.advance * Font->scale * DEdit->AdvanceScale;
+            float ScaleAdvance = CharData.Width * FontScale; //CharData.advance * Font->scale * DEdit->AdvanceScale;
             AtX += ScaleAdvance;
             float KernAdvance = 0;
             char Char1 = *Char; 
             char Char2 = *(Char + 1);
             if(Char + 1 || *(Char + 1) == ' ')
-                KernAdvance = stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
+                KernAdvance = (float)stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
             
             float ExtraAdvance = Font->scale * KernAdvance * FontScale; 
             AtX += ExtraAdvance; 

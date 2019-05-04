@@ -33,7 +33,7 @@ Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End, LARGE_INTEGER Fre
 }
 
 bool
-RunLoop(time_info *TimeInfo, bool Running, int FrameRate)
+RunLoop(time_info *TimeInfo, int FrameRate)
 {
     if(!TimeInfo->IsInitialized)
     {    
