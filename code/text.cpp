@@ -136,6 +136,7 @@ void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
     
     
 }
+// TODO(Barret5Ocal): The current error seems to be a problem with the graphics card on the school computers. I am not getting the same errors on my home computer
 
 void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float FontScale, debug_edit *DEdit)
 {
@@ -186,6 +187,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     
     
     glGenTextures(1, &Texture);
+    glActiveTexture(GL_TEXTURE0+0);
     glBindTexture(GL_TEXTURE_2D, Texture);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -199,22 +201,18 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     int baseline = (int) (Font->ascent*Font->scale);
     
     DebugEntry(DEBUG_BOX, AtX, AtY + baseline - (Font->descent * Font->scale) + 15, 41, 2, BoxDebug++);
-    // NOTE(Barret5Ocal):It starts at the AtX and spans past the 'H' box.
-    // The AtX of the next letter 'e' should start where this box ends but it does not. it starts little bit before that
-    // this might be a problem with the projection. 
     
     for(char *Char = Text;
         *Char;
         Char++)
     {
+        
+        
         if(*Char >= '!' && *Char <= '~')
         {
             character_asset CharData = GetCharacter(Font, *Char);
             
             Assert(CharData.Data);
-            // TODO(Barret5Ocal): this might be causing an error. we are calling a bunch of this stuff when we get the font data. check to see if we are overrunning a buffer or something 
-            // This might also be a problem with the way memory is being allocated. Check the memory arena system 
-            // Also, i'm not getting an error on my home pc
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CharData.Width, CharData.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, CharData.Data);
             
             glGenerateMipmap(GL_TEXTURE_2D);

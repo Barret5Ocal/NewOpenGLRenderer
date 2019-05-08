@@ -55,7 +55,7 @@ typedef double real64;
 #define ScreenWidth 1280
 #define ScreenHeight 720
 
-#include "win32_opengl.h"
+//#include "win32_opengl.h"
 
 #if IMGUI
 #include "include\imgui.cpp"
@@ -70,6 +70,9 @@ typedef double real64;
 #include "include\stb_truetype.h"
 
 #endif
+
+#define FGL_IMPLEMENTATION
+#include "include\final_dynamic_opengl.h"
 
 int LeftMouse = 0; 
 
@@ -287,12 +290,39 @@ int WinMain(HINSTANCE Instance,
         InitMemoryArena(&WorldArena, Gigabyte(1));
         memory_arena FontArena = PushArena(&WorldArena, Megabyte(16));
         
-        Win32InitOpenGL(Window);
+        HDC WindowDCGL = GetDC(Window);
+        
+        // Load opengl library without loading all the functions - functions are loaded separately later
+        if (fglLoadOpenGL(false)) {
+            
+            // Fill out window handle (This is platform dependent!)
+            fglOpenGLContextCreationParameters contextCreationParams = {};
+#if defined(FGL_PLATFORM_WIN32)
+            contextCreationParams.windowHandle.win32.deviceContext = WindowDCGL;// ... pass your current device context here
+            // or
+            contextCreationParams.windowHandle.win32.windowHandle = Window;// ... pass your current window handle here
+#endif
+            
+            
+            // Create context and load opengl functions
+            fglOpenGLContext glContext = {};
+            if (fglCreateOpenGLContext(&contextCreationParams, &glContext)) {
+                fglLoadOpenGLFunctions();
+                
+                // ... load shader, whatever you want to do
+                
+                fglDestroyOpenGLContext(&glContext);
+            }
+            fglUnloadOpenGL();
+        }
+        ReleaseDC(Window, WindowDCGL);
+        
+        //Win32InitOpenGL(Window);
         
         win32_windowdim Dim = Win32GetWindowDim(Window);
         
 #if IMGUI
-        ImGui::CreateContext();
+        ImGui::CreateeContext();
         
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         
@@ -326,7 +356,7 @@ int WinMain(HINSTANCE Instance,
         debug_edit DEdit;
         DEdit.Text = (char *)malloc(sizeof(char) * 32);
         
-        DEdit.Text = "Helgo Dark\n";//stuff";
+        DEdit.Text = "Helgo Dark\nAAAAA";
         
         int DebugGraphicsToggle = 0;
         
@@ -463,7 +493,9 @@ int WinMain(HINSTANCE Instance,
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, DEdit.Text, {400.0f, 400.0f}, 0.5f, &DEdit);
+            DrawString(ShaderProgram, &Font, "Helgo Dark\nstuff", {400.0f, 400.0f}, 0.5f, &DEdit);
+            //DrawString(ShaderProgram, &Font, "AAAAA", {400.0f, 400.0f + 32.937062616749998f}, 0.5f, &DEdit);
+            
             if(DebugGraphicsToggle)
                 DrawDebugGraphics(DebugShaderProgram);
             
@@ -471,7 +503,13 @@ int WinMain(HINSTANCE Instance,
 #if IMGUI
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 #endif 
-            Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
+            HDC WindowDC = GetDC(Window);
+            
+            glViewport(0, 0, ScreenWidth, ScreenHeight);
+            SwapBuffers(WindowDC);
+            
+            ReleaseDC(Window, WindowDC);
+            //Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
             
         }
     }

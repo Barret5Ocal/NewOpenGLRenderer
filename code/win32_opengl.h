@@ -86,7 +86,6 @@ typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffer
 typedef void (APIENTRYP PFNGLDELETEPROGRAMPROC) (GLuint program);
 typedef void (APIENTRYP PFNGLBUFFERSUBDATAPROC) (GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 
-
 PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
 PFNGLBINDVERTEXARRAYPROC glBindVertexArray; 
 PFNGLGENBUFFERSPROC glGenBuffers; 
@@ -173,6 +172,8 @@ void GetGLPointers()
     glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC) GetAnyGLFuncAddress("glGetAttribLocation");
     glDeleteBuffers = (PFNGLDELETEBUFFERSPROC) GetAnyGLFuncAddress("glDeleteBuffers");
     glDeleteProgram = (PFNGLDELETEPROGRAMPROC) GetAnyGLFuncAddress("glDeleteProgram");
+    
+    
     
 }
 
