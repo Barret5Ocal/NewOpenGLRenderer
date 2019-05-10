@@ -299,12 +299,10 @@ int WinMain(HINSTANCE Instance,
             fglOpenGLContext glContext = {};
             if (fglCreateOpenGLContext(&contextCreationParams, &glContext)) {
                 fglLoadOpenGLFunctions();
-                
-                // ... load shader, whatever you want to do
-                
-                //fglDestroyOpenGLContext(&glContext);
             }
-            //fglUnloadOpenGL();
+            else 
+                InvalidCodePath;
+            
         }
         ReleaseDC(Window, WindowDCGL);
 #else 
@@ -337,9 +335,9 @@ int WinMain(HINSTANCE Instance,
         read_results FragShaderCode = Win32GetFileContents("..\\project\\code\\frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
         GLuint ShaderProgram = CreateShaderProgram(VertexShaderCode.Memory, VertexShaderCode.Size, FragShaderCode.Memory, FragShaderCode.Size);
         
-        read_results DebugVertexShaderCode = Win32GetFileContents("..\\project\\code\\debug_vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
-        read_results DebugFragShaderCode = Win32GetFileContents("..\\project\\code\\debug_frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
-        GLuint DebugShaderProgram = CreateShaderProgram(DebugVertexShaderCode.Memory, DebugVertexShaderCode.Size, DebugFragShaderCode.Memory, DebugFragShaderCode.Size);
+        //read_results DebugVertexShaderCode = Win32GetFileContents("..\\project\\code\\debug_vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
+        //read_results DebugFragShaderCode = Win32GetFileContents("..\\project\\code\\debug_frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
+        //GLuint DebugShaderProgram = CreateShaderProgram(DebugVertexShaderCode.Memory, DebugVertexShaderCode.Size, DebugFragShaderCode.Memory, DebugFragShaderCode.Size);
         
         
         
@@ -481,11 +479,11 @@ int WinMain(HINSTANCE Instance,
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Helgo Dark\nstuff\nthings", {400.0f, 400.0f}, 0.5f);
+            DrawString(ShaderProgram, &Font, "Helgo Dark\nstuff\n123456\tI Tabbed It", {400.0f, 400.0f}, 0.5f);
             //DrawString(ShaderProgram, &Font, "AAAAA", {400.0f, 400.0f + 32.937062616749998f}, 0.5f, &DEdit);
             
-            if(DebugGraphicsToggle)
-                DrawDebugGraphics(DebugShaderProgram);
+            //if(DebugGraphicsToggle)
+            //DrawDebugGraphics(DebugShaderProgram);
             
             DebugIndex = 0;
 #if IMGUI

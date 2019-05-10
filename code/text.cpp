@@ -67,16 +67,6 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         
         uint8 *Data = (uint8 *)PushArray(Arena, Width * Height * 4, uint8); 
         
-        //GLuint texture = 0;
-        //glGenTextures(1, &texture);
-        //glBindTexture(GL_TEXTURE_2D, texture);
-        //glTexImage2D(GL_TEXTURE_2D,0,GL_RED,Width,Height,0,GL_RED,GL_UNSIGNED_BYTE,Data);
-        
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        
         FontAsset->Character[Index - '!'] = {(char)Index, Width, Height, XOffset, YOffset, c_x1, c_x2, c_y1, c_y2, advance, lsb, Data};
         
         uint8 *Source = Character; 
@@ -253,6 +243,10 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         {
             AtX = 67.0f; 
             AtY += (Font->ascent - Font->descent + Font->lineGap) * Font->scale * FontScale;
+        }
+        else if(*Char == '\t')
+        {
+            AtX += 33 * FontScale * 5;
         }
     }
     
