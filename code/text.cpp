@@ -132,13 +132,13 @@ void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
     //glLineWidth(3.0f);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    
+    //glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     
 }
-// TODO(Barret5Ocal): The current error seems to be a problem with the graphics card on the school computers. I am not getting the same errors on my home computer
 
-void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float FontScale, debug_edit *DEdit)
+// NOTE(Barret5Ocal): The error was caused by the DEBUG code. Make sure that your debug code is error resistent otherwise it will cause problems in the future. (I still don't know why it worked on my own computer)
+void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float FontScale)
 {
     Assert(Font && Font->Character);
     
@@ -155,35 +155,46 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     
     GLuint QuadVAO;
     GLuint VBO;
-    
+    GLuint EBO;
     
     vertex Vertices[] = { 
         // Pos      // Tex
-        {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-        {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, 
+        {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}}, // Top Left      0
+        {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}, // Bottom Right  1
+        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, // Bottom Left   2
         
-        {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-        {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}
+        //{{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  //              0
+        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}}, // Top Right     3
+        //{{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}   //              1
+    };
+    
+    uint32 Indices[] = 
+    {
+        0, 1, 2,
+        0, 3, 1
     };
     
     
-    
     glGenVertexArrays(1, &QuadVAO);
+    glBindVertexArray(QuadVAO); // NOTE(Barret5Ocal): Make sure you bind the VAO before you start gen-ing and and adding data to the other stuff 
+    
+    
     glGenBuffers(1, &VBO);
+    
     
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+    
+    
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW); 
     
     glBindVertexArray(QuadVAO);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    
-    glBindBuffer(GL_ARRAY_BUFFER, 0);  
-    glBindVertexArray(QuadVAO);
     
     
     glGenTextures(1, &Texture);
@@ -199,8 +210,6 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
     
     int baseline = (int) (Font->ascent*Font->scale);
-    
-    DebugEntry(DEBUG_BOX, AtX, AtY + baseline - (Font->descent * Font->scale) + 15, 41, 2, BoxDebug++);
     
     for(char *Char = Text;
         *Char;
@@ -218,38 +227,12 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
             glGenerateMipmap(GL_TEXTURE_2D);
             
             v2 Scale = {(float)CharData.Width * FontScale,(float)CharData.Height * FontScale};
-            Scale *= DEdit->Scale; 
             
             
             
             v2 Position = v2{AtX, AtY + baseline + (CharData.y1 * FontScale)};// + CharData.y2};
             DrawCharacter(ShaderProgram, Position, Scale);
             
-            
-            // NOTE(Barret5Ocal): Debug Graphics (Also, remember that debug graphics sometimes lies to you)
-            {
-                float ScaleLSB = CharData.lsb  * Font->scale;
-                
-                DebugEntry(DEBUG_POINT, AtX, AtY, 2, 2, 0); //RED Dot
-                
-                DebugEntry(DEBUG_POINT, Position.x, Position.y, 2, 2, 1); // GREEN Dot
-                
-                v2 TopLeft = {Position.x - CharData.Width, Position.y - CharData.Height}; 
-                DebugEntry(DEBUG_POINT, TopLeft.x, TopLeft.y, 2, 2, 2); // blue Dot
-                
-                v2 Origin = {TopLeft.x - ScaleLSB, TopLeft.y - CharData.y1 * 2}; 
-                DebugEntry(DEBUG_POINT, Origin.x, Origin.y, 2, 2, 3); // yellow Dot
-            }
-            
-            {// NOTE(Barret5Ocal): Debug stuff
-                float ScaleLSB = CharData.lsb  * Font->scale;
-                
-                AtX += ScaleLSB * DEdit->Addlsb; 
-                AtX += CharData.x1 * DEdit->Addx1; 
-                AtX += CharData.x2 * DEdit->Addx2; 
-                AtX += CharData.XOffset * DEdit->AddXOffset; 
-                
-            }
             
             float ScaleAdvance = CharData.Width * FontScale; //CharData.advance * Font->scale * DEdit->AdvanceScale;
             AtX += ScaleAdvance;
@@ -276,6 +259,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     glDeleteTextures(1, &Texture);
     glDeleteVertexArrays(1, &QuadVAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
     
     BoxDebug = 6; 
     

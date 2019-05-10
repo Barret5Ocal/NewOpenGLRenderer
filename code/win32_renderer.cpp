@@ -57,6 +57,9 @@ typedef double real64;
 
 //#include "win32_opengl.h"
 
+#define FGL_IMPLEMENTATION
+#include "include\final_dynamic_opengl.h"
+
 #if IMGUI
 #include "include\imgui.cpp"
 #include "include\imgui.h"
@@ -71,9 +74,6 @@ typedef double real64;
 
 #endif
 
-#define FGL_IMPLEMENTATION
-#include "include\final_dynamic_opengl.h"
-
 int LeftMouse = 0; 
 
 struct win32_windowdim 
@@ -81,17 +81,6 @@ struct win32_windowdim
     int Width, Height; 
     int x, y;
     //int DisplayWidth, DisplayHeight; 
-};
-
-struct debug_edit
-{
-    char *Text;
-    float Scale = 1.0f;
-    float AdvanceScale = 1.0f; 
-    int AddXOffset = 0; 
-    int Addx1 = 0;
-    int Addx2 = 0;
-    int Addlsb = 0;
 };
 
 
@@ -184,6 +173,7 @@ GLuint CreateShaderProgram(char *VertCode, int VertSize, char *FragCode, int Fra
         glGetShaderInfoLog(VertexShaderObj, sizeof(InfoLog), NULL, InfoLog);
         stbsp_sprintf(Buffer , "Error compiling shader type %d: '%s'\n", GL_VERTEX_SHADER, InfoLog);
         OutputDebugStringA(Buffer);
+        InvalidCodePath; 
     }
     
     glGetShaderiv(FragShaderObj, GL_COMPILE_STATUS, &success);
@@ -290,6 +280,7 @@ int WinMain(HINSTANCE Instance,
         InitMemoryArena(&WorldArena, Gigabyte(1));
         memory_arena FontArena = PushArena(&WorldArena, Megabyte(16));
         
+#if 1
         HDC WindowDCGL = GetDC(Window);
         
         // Load opengl library without loading all the functions - functions are loaded separately later
@@ -311,14 +302,15 @@ int WinMain(HINSTANCE Instance,
                 
                 // ... load shader, whatever you want to do
                 
-                fglDestroyOpenGLContext(&glContext);
+                //fglDestroyOpenGLContext(&glContext);
             }
-            fglUnloadOpenGL();
+            //fglUnloadOpenGL();
         }
         ReleaseDC(Window, WindowDCGL);
+#else 
         
-        //Win32InitOpenGL(Window);
-        
+        Win32InitOpenGL(Window);
+#endif 
         win32_windowdim Dim = Win32GetWindowDim(Window);
         
 #if IMGUI
@@ -353,10 +345,6 @@ int WinMain(HINSTANCE Instance,
         
         bool TextEditWindow = 1;
         
-        debug_edit DEdit;
-        DEdit.Text = (char *)malloc(sizeof(char) * 32);
-        
-        DEdit.Text = "Helgo Dark\nAAAAA";
         
         int DebugGraphicsToggle = 0;
         
@@ -493,7 +481,7 @@ int WinMain(HINSTANCE Instance,
             //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Helgo Dark\nstuff", {400.0f, 400.0f}, 0.5f, &DEdit);
+            DrawString(ShaderProgram, &Font, "Helgo Dark\nstuff\nthings", {400.0f, 400.0f}, 0.5f);
             //DrawString(ShaderProgram, &Font, "AAAAA", {400.0f, 400.0f + 32.937062616749998f}, 0.5f, &DEdit);
             
             if(DebugGraphicsToggle)
