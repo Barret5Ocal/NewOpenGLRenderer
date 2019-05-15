@@ -39,6 +39,19 @@ typedef uint64_t uint64;
 typedef float real32;
 typedef double real64;
 
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef float r32;
+typedef double r64;
+
 #define global_variable static 
 #define local_persist static 
 #define internal static 
@@ -249,10 +262,10 @@ MainWindowProc(HWND Window,
 }
 
 
-int WinMain(HINSTANCE Instance, 
-            HINSTANCE PrevInstance,
-            LPSTR CmdLine,
-            int ShowCode)
+int __stdcall WinMain(HINSTANCE Instance, 
+                      HINSTANCE PrevInstance,
+                      LPSTR CmdLine,
+                      int ShowCode)
 {
     WNDCLASS WindowClass = {};
     WindowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
@@ -339,16 +352,16 @@ int WinMain(HINSTANCE Instance,
         //read_results DebugFragShaderCode = Win32GetFileContents("..\\project\\code\\debug_frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
         //GLuint DebugShaderProgram = CreateShaderProgram(DebugVertexShaderCode.Memory, DebugVertexShaderCode.Size, DebugFragShaderCode.Memory, DebugFragShaderCode.Size);
         
-        
-        
         bool TextEditWindow = 1;
-        
         
         int DebugGraphicsToggle = 0;
         
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, 60))
         {
+            TIMED_BLOCK();
+            
+            
             MSG Message;
             while(PeekMessage(&Message, Window, 0, 0, PM_REMOVE))
             {

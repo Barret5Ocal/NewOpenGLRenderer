@@ -2,7 +2,7 @@ void B50memcpy(void * destination, const void * source, size_t num )
 {
     char *D = (char *) destination;
     char *S  = (char *) source; 
-    for(int Index = 0;
+    for(size_t Index = 0;
         Index < num;
         ++Index)
     {
