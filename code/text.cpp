@@ -101,6 +101,8 @@ inline character_asset GetCharacter(font_asset *Font, char Character)
 
 void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
 {
+    TIMED_BLOCK();
+    
     DebugEntry(DEBUG_BOX, Position.x, Position.y, Scale.x, Scale.y, BoxDebug++);
     
     GLuint WorldLocation = glGetUniformLocation(ShaderProgram, "World");
@@ -130,6 +132,7 @@ void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
 // NOTE(Barret5Ocal): The error was caused by the DEBUG code. Make sure that your debug code is error resistent otherwise it will cause problems in the future. (I still don't know why it worked on my own computer)
 void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float FontScale)
 {
+    TIMED_BLOCK();
     Assert(Font && Font->Character);
     
     real32 AtX = 67.0f;
@@ -205,7 +208,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         *Char;
         Char++)
     {
-        
+        TIMED_BLOCK();
         
         if(*Char >= '!' && *Char <= '~')
         {

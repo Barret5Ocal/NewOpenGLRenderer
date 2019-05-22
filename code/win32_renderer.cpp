@@ -262,6 +262,9 @@ MainWindowProc(HWND Window,
 }
 
 
+void OverlayCycleCounters();
+
+
 int __stdcall WinMain(HINSTANCE Instance, 
                       HINSTANCE PrevInstance,
                       LPSTR CmdLine,
@@ -436,8 +439,6 @@ int __stdcall WinMain(HINSTANCE Instance,
                 if(DebugGraphicsToggle){ImGui::Text("On");}else {ImGui::Text("Off");}
                 ImGui::EndGroup();
                 
-                
-                
                 ImGui::End();
                 
                 
@@ -489,14 +490,9 @@ int __stdcall WinMain(HINSTANCE Instance,
 #endif 
             
             glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
-            //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
             DrawString(ShaderProgram, &Font, "Helgo Dark\nstuff\n123456\tI Tabbed It", {400.0f, 400.0f}, 0.5f);
-            //DrawString(ShaderProgram, &Font, "AAAAA", {400.0f, 400.0f + 32.937062616749998f}, 0.5f, &DEdit);
-            
-            //if(DebugGraphicsToggle)
-            //DrawDebugGraphics(DebugShaderProgram);
             
             DebugIndex = 0;
 #if IMGUI
@@ -508,10 +504,36 @@ int __stdcall WinMain(HINSTANCE Instance,
             SwapBuffers(WindowDC);
             
             ReleaseDC(Window, WindowDC);
-            //Win32RenderFrame(Window, ScreenWidth, ScreenHeight);
             
+            OverlayCycleCounters();
         }
     }
     return 0; 
+}
+
+debug_record DebugRecordArray[__COUNTER__];
+
+
+void OverlayCycleCounters()
+{
+    for(int CounterIndex = 0;
+        CounterIndex < ArrayCount(DebugRecordArray);
+        ++CounterIndex)
+    {
+        debug_record *Counter = DebugRecordArray + CounterIndex;
+        
+        if(Counter->HitCount)
+        {
+            char TextBuffer[256];
+            _snprintf_s(TextBuffer, sizeof(TextBuffer), " %s line:%d %d: %I64ucy %uh %I64ucy/h\n", 
+                        Counter->FunctionName, Counter->LineNumber, CounterIndex, Counter->CycleCount, Counter->HitCount, Counter->CycleCount / Counter->HitCount);
+            
+            OutputDebugStringA(TextBuffer);
+            
+            Counter->HitCount = 0;
+            Counter->CycleCount = 0;
+        }
+    }
+    
 }
 

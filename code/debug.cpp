@@ -208,7 +208,7 @@ void DrawDebugGraphics(GLuint DebugShader)
     
 }
 
-#if 0 
+#if 1
 #define TIMED_BLOCK__(Number, ...) timed_block TimedBlock##Number(__COUNTER__, __FILE__, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 #define TIMED_BLOCK_(Number, ...) TIMED_BLOCK__(Number, ## __VA_ARGS__)
 #define TIMED_BLOCK(...) TIMED_BLOCK_(__LINE__, ## __VA_ARGS__)
@@ -245,7 +245,12 @@ struct timed_block
         Record->CycleCount += __rdtsc();
     }
 };
+
+
+
 #else 
 #define TIMED_BLOCK() 
 
+
 #endif 
+
