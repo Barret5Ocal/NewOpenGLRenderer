@@ -36,7 +36,7 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     
     int ascent; int descent; int lineGap;
     stbtt_GetFontVMetrics(&FontInfo, &ascent, &descent, &lineGap);
-    float scale = stbtt_ScaleForPixelHeight(&FontInfo, 64.0f);
+    float scale = stbtt_ScaleForPixelHeight(&FontInfo, 100.0f);
     int baseline = (int) (ascent*scale);
     FontAsset->ascent = ascent;
     FontAsset->descent = descent;
@@ -130,19 +130,17 @@ void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
 }
 
 // NOTE(Barret5Ocal): The error was caused by the DEBUG code. Make sure that your debug code is error resistent otherwise it will cause problems in the future. (I still don't know why it worked on my own computer)
-void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float FontScale)
+void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float Pixels)
 {
     TIMED_BLOCK();
     Assert(Font && Font->Character);
     
-    real32 AtX = 67.0f;
-    real32 AtY = 128.0f;
+    real32 AtX = Baseline.x;//67.0f;
+    real32 AtY = Baseline.y;//128.0f;
     
+    float FontScale =  (Pixels / (Font->ascent - Font->descent)) / Font->scale;
     
     glUseProgram(ShaderProgram);
-    
-    //real32 AtX = 0.0f;
-    //real32 AtY = 0.0f;
     
     GLuint Texture;
     
@@ -219,6 +217,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
             
             glGenerateMipmap(GL_TEXTURE_2D);
             
+            
             v2 Scale = {(float)CharData.Width * FontScale,(float)CharData.Height * FontScale};
             
             
@@ -244,7 +243,7 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
         }
         else if(*Char == '\n')
         {
-            AtX = 67.0f; 
+            AtX = Baseline.x;//67.0f; 
             AtY += (Font->ascent - Font->descent + Font->lineGap) * Font->scale * FontScale;
         }
         else if(*Char == '\t')

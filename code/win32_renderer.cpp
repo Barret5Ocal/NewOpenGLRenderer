@@ -492,7 +492,7 @@ int __stdcall WinMain(HINSTANCE Instance,
             glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             
-            DrawString(ShaderProgram, &Font, "Helgo Dark\nstuff\n123456\tI Tabbed It", {400.0f, 400.0f}, 0.5f);
+            DrawString(ShaderProgram, &Font, "Helgo Dark\nstuff\n123456\tI Tabbed It", {100.0f, 100.0f}, 30.0f);
             
             DebugIndex = 0;
 #if IMGUI
