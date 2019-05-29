@@ -13,7 +13,7 @@ struct character_asset
     int32 advance;
     int32 lsb;
     uint8 *Data;
-    //uint32 DataID; 
+    uint32 DataOffset; 
 };
 
 struct font_asset
@@ -25,6 +25,9 @@ struct font_asset
     int descent; 
     int lineGap;
     int baseline;
+    
+    uint8 *Atlas;
+    uint32 Size; 
 };
 
 void GetFont(memory_arena *Arena, font_asset *FontAsset) 
@@ -48,6 +51,10 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     stbtt_GetFontBoundingBox(&FontInfo, &x, &y, &x1, &y1);
     
     FontAsset->Character = (character_asset *)PushArray(Arena, '~' - '!' + 1, character_asset);
+    
+    FontAsset->Atlas = Arena->Memory + Arena->Used; 
+    
+    uint32 NextOffset = 0; 
     for(int Index = '!'; 
         Index <= '~';
         ++Index)
@@ -67,7 +74,9 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         
         uint8 *Data = (uint8 *)PushArray(Arena, Width * Height * 4, uint8); 
         
-        FontAsset->Character[Index - '!'] = {(char)Index, Width, Height, XOffset, YOffset, c_x1, c_x2, c_y1, c_y2, advance, lsb, Data};
+        FontAsset->Character[Index - '!'] = {(char)Index, Width, Height, XOffset, YOffset, c_x1, c_x2, c_y1, c_y2, advance, lsb, Data, NextOffset};
+        
+        NextOffset += (Width * Height * 4) * sizeof(uint8);
         
         uint8 *Source = Character; 
         uint8 *DestRow = Data;
@@ -92,6 +101,8 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         
         
     }
+    
+    FontAsset->Size = NextOffset;
 }
 
 inline character_asset GetCharacter(font_asset *Font, char Character)
