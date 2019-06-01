@@ -271,3 +271,33 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     BoxDebug = 6; 
     
 }
+
+struct font_shader_instance
+{
+    v2 Position;
+    v2 Size;
+    v2 TextureCoordinates;
+    v2 TextureSize;
+    int32_t Color; // Index into the color palette texture.
+};
+
+
+
+void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float Pixels)
+{
+    TIMED_BLOCK();
+    
+    font_shader_instance FontInstanceBuffer[Kilobyte(64)];
+    uint32             FontInstanceCount;
+    
+    v4 FontColorPaletteBuffer[1024] = {};
+    int32 FontColorPaletteAt;
+    v4 LastColor = {};
+    
+    
+    GLuint FontColorPalette;
+    GLuint FontVAO;
+    GLuint GlyphArrayBuffer;
+    GLuint GlyphInstanceBuffer;
+    
+}
