@@ -272,32 +272,138 @@ void DrawString(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline,
     
 }
 
-struct font_shader_instance
-{
-    v2 Position;
-    v2 Size;
-    v2 TextureCoordinates;
-    v2 TextureSize;
-    int32_t Color; // Index into the color palette texture.
-};
-
-
-
-void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float Pixels)
+void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2 Baseline, float Pixels, v4  Color)
 {
     TIMED_BLOCK();
     
-    font_shader_instance FontInstanceBuffer[Kilobyte(64)];
-    uint32             FontInstanceCount;
+    real32 AtX = Baseline.x;//67.0f;
+    real32 AtY = Baseline.y;//128.0f;
     
-    v4 FontColorPaletteBuffer[1024] = {};
-    int32 FontColorPaletteAt;
-    v4 LastColor = {};
+    float FontScale =  (Pixels / (Font->ascent - Font->descent)) / Font->scale;
+    
+    int baseline = (int) (Font->ascent*Font->scale);
+    
+    m4 PositionArray[100] = {};
+    u32 TextureOffsetArray[100] = {};
+    
+    m4 Ortho;
+    gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
+    
+    i32 Index = 0;
+    for(char *Char = Text;
+        *Char;
+        Char++)
+    {
+        
+        if(*Char >= '!' && *Char <= '~')
+        {
+            character_asset CharData = GetCharacter(Font, *Char);
+            
+            v2 Scale = {(float)CharData.Width * FontScale,(float)CharData.Height * FontScale};
+            
+            v2 Position = v2{AtX, AtY + baseline + (CharData.y1 * FontScale)};// + CharData.y2};
+            
+            m4 World; 
+            gb_mat4_identity(&World);
+            gb_mat4_translate(&World, {Position.x, Position.y, 0.0f});
+            m4 ScaleM;
+            gb_mat4_scale(&ScaleM, {Scale.x, Scale.y, 0.0f});
+            World = World * ScaleM;
+            
+            PositionArray[Index] = World;
+            TextureOffsetArray[Index] = CharData.DataOffset;
+            
+            Index++;
+            
+            float ScaleAdvance = CharData.Width * FontScale; 
+            AtX += ScaleAdvance;
+            float KernAdvance = 0;
+            char Char1 = *Char; 
+            char Char2 = *(Char + 1);
+            if(Char + 1 || *(Char + 1) == ' ')
+                KernAdvance = (float)stbtt_GetCodepointKernAdvance(&FontInfo, Char1, Char2);
+            
+            float ExtraAdvance = Font->scale * KernAdvance * FontScale; 
+            AtX += ExtraAdvance; 
+        }
+        else if(*Char == ' ')
+        {
+            AtX += 33 * FontScale;
+        }
+        else if(*Char == '\n')
+        {
+            AtX = Baseline.x;//67.0f; 
+            AtY += (Font->ascent - Font->descent + Font->lineGap) * Font->scale * FontScale;
+        }
+        else if(*Char == '\t')
+        {
+            AtX += 33 * FontScale * 5;
+        }
+    }
+    
+    unsigned int instanceVBO;
+    glGenBuffers(1, &instanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(m4) * 100, &PositionArray[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    
+    unsigned int instanceTex;
+    glGenBuffers(1, &instanceTex);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceTex);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(u32), &TextureOffsetArray[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     
     
-    GLuint FontColorPalette;
-    GLuint FontVAO;
-    GLuint GlyphArrayBuffer;
-    GLuint GlyphInstanceBuffer;
+    vertex Vertices[] = { 
+        // Pos      // Tex
+        {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}}, // Top Left      0
+        {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}, // Bottom Right  1
+        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, // Bottom Left   2
+        
+        //{{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  //              0
+        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}}, // Top Right     3
+        //{{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}   //              1
+    };
     
+    uint32 Indices[] = 
+    {
+        0, 1, 2,
+        0, 3, 1
+    };
+    
+    
+    GLuint QuadVAO;
+    GLuint VBO;
+    GLuint EBO;
+    
+    glGenVertexArrays(1, &QuadVAO);
+    glBindVertexArray(QuadVAO); // NOTE(Barret5Ocal): Make sure you bind the VAO before you start gen-ing and and adding data to the other stuff 
+    
+    glGenBuffers(1, &VBO);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+    
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW); 
+    
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO); // this attribute comes from a different vertex buffer
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(v4), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribDivisor(2, 1); // tell OpenGL this is an instanced vertex attribute.
+    
+    glEnableVertexAttribArray(3);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO); // this attribute comes from a different vertex buffer
+    glVertexAttribPointer(2, 2, GL_INT, GL_FALSE, sizeof(u32), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribDivisor(3, 1); // tell OpenGL this is an instanced vertex attribute.
+    
+    GLuint Texture;
 }
