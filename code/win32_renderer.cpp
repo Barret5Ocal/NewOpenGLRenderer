@@ -74,6 +74,7 @@ typedef double r64;
 #include "include\final_dynamic_opengl.h"
 
 #define STB_RECT_PACK_IMPLEMENTATION
+#define STBRP_LARGE_RECTS
 #include "include\stb_rect_pack.h"
 
 #if IMGUI

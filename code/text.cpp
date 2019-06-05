@@ -59,6 +59,8 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     int TotalSurface = 0;
     int Count = 0;
     
+    stbrp_rect rects[94];
+    
     uint32 NextOffset = 0; 
     for(int Index = '!'; 
         Index <= '~';
@@ -70,6 +72,7 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         int32 Width, Height;
         uint8 *Character = stbtt_GetCodepointBitmap(&FontInfo, 0, scale , Index, &Width, &Height, &XOffset, &YOffset);
         
+        rects[Count] = {Count, Width, Height};
         TotalWidth += Width;
         TotalHeight += Height; 
         Count++;
@@ -112,8 +115,20 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         
     }
     
+    
     FontAsset->Size = NextOffset;
     
+    
+    stbrp_context context;
+    stbrp_node nodes[1024] = {};
+    stbrp_init_target (&context, 1024, 1024, nodes, 1024);
+    int Result = stbrp_pack_rects (&context, rects, 94);
+    stbtt_pack_context spc = {};
+    stbrp_context packcontext;
+    unsigned char *pixels = (unsigned char *)PushArray(Arena, '~' - '!' + 1, unsigned int);
+    int Result2 = stbtt_PackBegin(&spc, pixels, 1024, 1024, 0, 1, &context);
+    
+    int i =0;
 #if 0
     const int surface_sqrt = (int)gb_sqrt((float)TotalSurface) + 1;
     int TexWidth = (surface_sqrt >= 4096*0.7f) ? 4096 : (surface_sqrt >= 2048*0.7f) ? 2048 : (surface_sqrt >= 1024*0.7f) ? 1024 : 512;
