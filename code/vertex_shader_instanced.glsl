@@ -1,22 +1,18 @@
-#version 130
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 aTexCoords;
+layout (location = 2) in mat4 instanceMatrix;
+layout (location = 3) in int32 textOffset; 
 
-// Per instance
-in vec2 GlyphPosition;
-in vec2 GlyphSize;
-in vec2 GlyphTextureCoordinates;
-in vec2 GlyphTextureSize;
-in int VSColor;
+out vec2 TexCoords;
 
-out vec2 FSTextureCoordinates;
-out vec4 FSColor;
-
-uniform sampler1D FontColor;
+uniform mat4 projection;
+uniform mat4 view;
 
 void main()
 {
-    vec2 VSPosition = vec2(gl_VertexID >> 1, gl_VertexID & 1);
-    FSTextureCoordinates = GlyphTextureCoordinates + GlyphTextureSize * VSPosition;
-    FSColor = texelFetch(FontColor, VSColor, 0);
+    gl_Position = Projection * World * vec4(Position, 1.0);
+    Color = vec4(clamp(Position, 0.0, 1.0), 1.0);
+    TexCoord = TexCoordIn;
     
-    gl_Position = vec4(GlyphPosition + GlyphSize * VSPosition, 0.0, 1.0);
 }
