@@ -73,6 +73,9 @@ typedef double r64;
 #define FGL_IMPLEMENTATION
 #include "include\final_dynamic_opengl.h"
 
+#define STB_RECT_PACK_IMPLEMENTATION
+#include "include\stb_rect_pack.h"
+
 #if IMGUI
 #include "include\imgui.cpp"
 #include "include\imgui.h"
@@ -330,13 +333,17 @@ int __stdcall WinMain(HINSTANCE Instance,
         font_asset Font;
         GetFont(&FontArena, &Font);
         
+        
+        int result = stbi_write_jpg("Test.png", 500, 500, 4, (void *)Font.Atlas, 100);
+        
+        
         read_results VertexShaderCode = Win32GetFileContents("..\\project\\code\\vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
         read_results FragShaderCode = Win32GetFileContents("..\\project\\code\\frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
         GLuint ShaderProgram = CreateShaderProgram(VertexShaderCode.Memory, VertexShaderCode.Size, FragShaderCode.Memory, FragShaderCode.Size);
         
-        read_results VertexShaderCode_Instanced = Win32GetFileContents("..\\project\\code\\vertex_shader_instanced.glsl");
-        read_results FragShaderCode_Instanced = Win32GetFileContents("..\\project\\code\\frag_shader_instanced.glsl");
-        GLuint ShaderProgram_Instanced = CreateShaderProgram(VertexShaderCode_Instanced.Memory, VertexShaderCode_Instanced.Size, FragShaderCode_Instanced.Memory, FragShaderCode_Instanced.Size);
+        //read_results VertexShaderCode_Instanced = Win32GetFileContents("..\\project\\code\\vertex_shader_instanced.glsl");
+        //read_results FragShaderCode_Instanced = Win32GetFileContents("..\\project\\code\\frag_shader_instanced.glsl");
+        //GLuint ShaderProgram_Instanced = CreateShaderProgram(VertexShaderCode_Instanced.Memory, VertexShaderCode_Instanced.Size, FragShaderCode_Instanced.Memory, FragShaderCode_Instanced.Size);
         
         
         bool TextEditWindow = 1;

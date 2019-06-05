@@ -54,6 +54,11 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     
     FontAsset->Atlas = Arena->Memory + Arena->Used; 
     
+    int TotalWidth = 0;
+    int TotalHeight = 0;
+    int TotalSurface = 0;
+    int Count = 0;
+    
     uint32 NextOffset = 0; 
     for(int Index = '!'; 
         Index <= '~';
@@ -64,6 +69,11 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
         int32 XOffset, YOffset; 
         int32 Width, Height;
         uint8 *Character = stbtt_GetCodepointBitmap(&FontInfo, 0, scale , Index, &Width, &Height, &XOffset, &YOffset);
+        
+        TotalWidth += Width;
+        TotalHeight += Height; 
+        Count++;
+        TotalSurface += (Width * Height); 
         
         int c_x1, c_y1, c_x2, c_y2;
         stbtt_GetCodepointBitmapBox(&FontInfo, Index, scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
@@ -103,6 +113,43 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     }
     
     FontAsset->Size = NextOffset;
+    
+#if 0
+    const int surface_sqrt = (int)gb_sqrt((float)TotalSurface) + 1;
+    int TexWidth = (surface_sqrt >= 4096*0.7f) ? 4096 : (surface_sqrt >= 2048*0.7f) ? 2048 : (surface_sqrt >= 1024*0.7f) ? 1024 : 512;
+    const int TEX_HEIGHT_MAX = 1024 * 32;
+    
+    stbtt_pack_context spc = {};
+    stbtt_PackBegin(&spc, NULL, TexWidth, TEX_HEIGHT_MAX, 0, 1, NULL);
+    
+    int i =0; 
+    //ImFontAtlasBuildPackCustomRects(atlas, spc.pack_info);
+    
+    stbrp_context* pack_context = (stbrp_context*)spc.pack_info;
+    
+    //ImVector<ImFontAtlas::CustomRect>& user_rects = atlas->CustomRects;
+    
+    stbrp_rect pack_rects[94];
+    pack_rects.resize(user_rects.Size);
+    memset(pack_rects.Data, 0, (size_t)pack_rects.size_in_bytes());
+    for (int i = 0; i < user_rects.Size; i++)
+    {
+        pack_rects[i].w = user_rects[i].Width;
+        pack_rects[i].h = user_rects[i].Height;
+    }
+    stbrp_pack_rects(pack_context, &pack_rects[0], pack_rects.Size);
+    for (int i = 0; i < pack_rects.Size; i++)
+        if (pack_rects[i].was_packed)
+    {
+        user_rects[i].X = pack_rects[i].x;
+        user_rects[i].Y = pack_rects[i].y;
+        IM_ASSERT(pack_rects[i].w == user_rects[i].Width && pack_rects[i].h == user_rects[i].Height);
+        atlas->TexHeight = ImMax(atlas->TexHeight, pack_rects[i].y + pack_rects[i].h);
+    }
+    
+#endif 
+    
+    
 }
 
 inline character_asset GetCharacter(font_asset *Font, char Character)
@@ -290,6 +337,7 @@ void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2
     gb_mat4_ortho3d(&Ortho, 0, ScreenWidth, ScreenHeight, 0, -1, 1);
     
     i32 Index = 0;
+    
     for(char *Char = Text;
         *Char;
         Char++)
@@ -419,7 +467,7 @@ void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
     
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CharData.Width, CharData.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, CharData.Data);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CharData.Width, CharData.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, CharData.Data);
     
     glGenerateMipmap(GL_TEXTURE_2D);
     
