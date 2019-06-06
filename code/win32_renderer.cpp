@@ -298,7 +298,7 @@ int __stdcall WinMain(HINSTANCE Instance,
         
         memory_arena WorldArena; 
         InitMemoryArena(&WorldArena, Gigabyte(1));
-        memory_arena FontArena = PushArena(&WorldArena, Megabyte(16));
+        memory_arena FontArena = PushArena(&WorldArena, Megabyte(64));
         
 #if 1
         HDC WindowDCGL = GetDC(Window);

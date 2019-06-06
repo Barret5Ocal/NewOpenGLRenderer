@@ -125,8 +125,17 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     int Result = stbrp_pack_rects (&context, rects, 94);
     stbtt_pack_context spc = {};
     stbrp_context packcontext;
-    unsigned char *pixels = (unsigned char *)PushArray(Arena, '~' - '!' + 1, unsigned int);
-    int Result2 = stbtt_PackBegin(&spc, pixels, 1024, 1024, 0, 1, &context);
+    unsigned char *pixels = (unsigned char *)PushArray(Arena, Megabyte(8), unsigned int);
+    int Result2 = stbtt_PackBegin(&spc, pixels, 512, 1024, 0, 1, 0);
+    stbtt_PackSetOversampling(&spc, 1, 1);
+    
+    stbtt_packedchar chardata_for_range[94];
+    int Result3 = stbtt_PackFontRange(&spc, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0), 100, L'!', 94, chardata_for_range);
+    
+    
+    stbtt_PackEnd(&spc);
+    
+    stbi_write_jpg("Text.jpg", 512, 1024,4, pixels, 100);
     
     int i =0;
 #if 0
