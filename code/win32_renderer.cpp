@@ -335,9 +335,6 @@ int __stdcall WinMain(HINSTANCE Instance,
         GetFont(&FontArena, &Font);
         
         
-        int result = stbi_write_jpg("Test.png", 500, 500, 4, (void *)Font.Atlas, 100);
-        
-        
         read_results VertexShaderCode = Win32GetFileContents("..\\project\\code\\vertex_shader.glsl");//"..\\project\\code\\vertex_shader.glsl");
         read_results FragShaderCode = Win32GetFileContents("..\\project\\code\\frag_shader.glsl");//"..\\project\\code\\frag_shader.glsl"); 
         GLuint ShaderProgram = CreateShaderProgram(VertexShaderCode.Memory, VertexShaderCode.Size, FragShaderCode.Memory, FragShaderCode.Size);

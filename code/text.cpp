@@ -28,6 +28,7 @@ struct font_asset
     
     uint8 *Atlas;
     uint32 Size; 
+    stbtt_packedchar *CharData;
 };
 
 void GetFont(memory_arena *Arena, font_asset *FontAsset) 
@@ -52,7 +53,7 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     
     FontAsset->Character = (character_asset *)PushArray(Arena, '~' - '!' + 1, character_asset);
     
-    FontAsset->Atlas = Arena->Memory + Arena->Used; 
+    //FontAsset->Atlas = Arena->Memory + Arena->Used; 
     
     int TotalWidth = 0;
     int TotalHeight = 0;
@@ -116,64 +117,29 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
     }
     
     
-    FontAsset->Size = NextOffset;
+    FontAsset->Size = 94;
     
     
-    stbrp_context context;
-    stbrp_node nodes[1024] = {};
-    stbrp_init_target (&context, 1024, 1024, nodes, 1024);
-    int Result = stbrp_pack_rects (&context, rects, 94);
+    //stbrp_context context;
+    //stbrp_node nodes[1024] = {};
+    //stbrp_init_target (&context, 1024, 1024, nodes, 1024);
+    //int Result = stbrp_pack_rects (&context, rects, 94);
     stbtt_pack_context spc = {};
-    stbrp_context packcontext;
+    //stbrp_context packcontext;
     unsigned char *pixels = (unsigned char *)PushArray(Arena, Megabyte(8), unsigned int);
-    int Result2 = stbtt_PackBegin(&spc, pixels, 512, 1024, 0, 1, 0);
+    int Result2 = stbtt_PackBegin(&spc, pixels, 512, 512, 0, 1, 0);
     stbtt_PackSetOversampling(&spc, 1, 1);
     
-    stbtt_packedchar chardata_for_range[94];
-    int Result3 = stbtt_PackFontRange(&spc, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0), 100, L'!', 94, chardata_for_range);
+    FontAsset->CharData = (stbtt_packedchar *) PushArray(Arena, 94, stbtt_packedchar);
+    //stbtt_packedchar chardata_for_range[94];
+    int Result3 = stbtt_PackFontRange(&spc, (unsigned char *)Read.Memory, stbtt_GetFontOffsetForIndex((unsigned char *)Read.Memory, 0), 100, L'!', 94, FontAsset->CharData);
     
     
     stbtt_PackEnd(&spc);
     
-    stbi_write_jpg("Text.jpg", 512, 1024,4, pixels, 100);
+    stbi_write_jpg("Text.jpg", 512, 512,4, pixels, 100);
     
-    int i =0;
-#if 0
-    const int surface_sqrt = (int)gb_sqrt((float)TotalSurface) + 1;
-    int TexWidth = (surface_sqrt >= 4096*0.7f) ? 4096 : (surface_sqrt >= 2048*0.7f) ? 2048 : (surface_sqrt >= 1024*0.7f) ? 1024 : 512;
-    const int TEX_HEIGHT_MAX = 1024 * 32;
-    
-    stbtt_pack_context spc = {};
-    stbtt_PackBegin(&spc, NULL, TexWidth, TEX_HEIGHT_MAX, 0, 1, NULL);
-    
-    int i =0; 
-    //ImFontAtlasBuildPackCustomRects(atlas, spc.pack_info);
-    
-    stbrp_context* pack_context = (stbrp_context*)spc.pack_info;
-    
-    //ImVector<ImFontAtlas::CustomRect>& user_rects = atlas->CustomRects;
-    
-    stbrp_rect pack_rects[94];
-    pack_rects.resize(user_rects.Size);
-    memset(pack_rects.Data, 0, (size_t)pack_rects.size_in_bytes());
-    for (int i = 0; i < user_rects.Size; i++)
-    {
-        pack_rects[i].w = user_rects[i].Width;
-        pack_rects[i].h = user_rects[i].Height;
-    }
-    stbrp_pack_rects(pack_context, &pack_rects[0], pack_rects.Size);
-    for (int i = 0; i < pack_rects.Size; i++)
-        if (pack_rects[i].was_packed)
-    {
-        user_rects[i].X = pack_rects[i].x;
-        user_rects[i].Y = pack_rects[i].y;
-        IM_ASSERT(pack_rects[i].w == user_rects[i].Width && pack_rects[i].h == user_rects[i].Height);
-        atlas->TexHeight = ImMax(atlas->TexHeight, pack_rects[i].y + pack_rects[i].h);
-    }
-    
-#endif 
-    
-    
+    FontAsset->Atlas = pixels; 
 }
 
 inline character_asset GetCharacter(font_asset *Font, char Character)
@@ -491,7 +457,7 @@ void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
     
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CharData.Width, CharData.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, CharData.Data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, Font->CharData);
     
     glGenerateMipmap(GL_TEXTURE_2D);
     
