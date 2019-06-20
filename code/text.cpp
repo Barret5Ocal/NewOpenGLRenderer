@@ -1,4 +1,3 @@
-
 struct character_asset
 {
     char Codepoint;
@@ -145,6 +144,12 @@ void GetFont(memory_arena *Arena, font_asset *FontAsset)
 inline character_asset GetCharacter(font_asset *Font, char Character)
 {
     return Font->Character[Character - '!']; //33
+}
+
+
+inline stbtt_packedchar GetCharacterSTB(font_asset *Font, char Character)
+{
+    return Font->CharData[Character - '!']; //33
 }
 
 void DrawCharacter(GLuint ShaderProgram, v2 Position, v2 Scale)
@@ -320,7 +325,8 @@ void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2
     
     int baseline = (int) (Font->ascent*Font->scale);
     
-    m4 PositionArray[100] = {};
+    v2 PositionArray[100] = {};
+    v2 ScaleArray[100] = {};
     v2 TextureOffsetArray[100] = {};
     v2 TextureSizeArray[100] = {};
     
@@ -337,6 +343,7 @@ void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2
         if(*Char >= '!' && *Char <= '~')
         {
             character_asset CharData = GetCharacter(Font, *Char);
+            stbtt_packedchar CharDataSTB = GetCharacterSTB(Font, *Char);
             
             v2 Scale = {(float)CharData.Width * FontScale,(float)CharData.Height * FontScale};
             
@@ -349,8 +356,10 @@ void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2
             gb_mat4_scale(&ScaleM, {Scale.x, Scale.y, 0.0f});
             World = World * ScaleM;
             
-            PositionArray[Index] = World;
-            TextureOffsetArray[Index] = {};
+            PositionArray[Index] = Position;
+            ScaleArray[Index] = Scale; 
+            TextureOffsetArray[Index] = {(float)CharDataSTB.x0, (float)CharDataSTB.y0};
+            TextureSizeArray[Index] =  {(float)CharDataSTB.x1 - (float)CharDataSTB.x0, (float)CharDataSTB.y1 - (float)CharDataSTB.y0};
             
             Index++;
             
