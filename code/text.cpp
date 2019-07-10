@@ -349,13 +349,6 @@ void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2
             
             v2 Position = v2{AtX, AtY + baseline + (CharData.y1 * FontScale)};// + CharData.y2};
             
-            m4 World; 
-            gb_mat4_identity(&World);
-            gb_mat4_translate(&World, {Position.x, Position.y, 0.0f});
-            m4 ScaleM;
-            gb_mat4_scale(&ScaleM, {Scale.x, Scale.y, 0.0f});
-            World = World * ScaleM;
-            
             PositionArray[Index] = Position;
             ScaleArray[Index] = Scale; 
             TextureOffsetArray[Index] = {(float)CharDataSTB.x0, (float)CharDataSTB.y0};
@@ -392,8 +385,15 @@ void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2
     unsigned int instanceVBO;
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(m4) * 100, &PositionArray[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(v2) * 100, &PositionArray[0], GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    
+    unsigned int instanceScale;
+    glGenBuffers(1, &instanceScale);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceScale);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(v2) * 100, &ScaleArray[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    
     
     unsigned int instanceTex;
     glGenBuffers(1, &instanceTex);
@@ -443,26 +443,35 @@ void DrawString_Instanced(GLuint ShaderProgram, font_asset *Font, char *Text, v2
     
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
+    
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     
+    
+    
     glEnableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO); // this attribute comes from a different vertex buffer
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(m4), (void*)0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glVertexAttribDivisor(1, 1); // tell OpenGL this is an instanced vertex attribute.
-    
-    glEnableVertexAttribArray(3);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceTex); // this attribute comes from a different vertex buffer
-    glVertexAttribPointer(2, 2, GL_INT, GL_FALSE, sizeof(v2), (void*)sizeof(v2));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(v2), (void*)0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glVertexAttribDivisor(2, 1); // tell OpenGL this is an instanced vertex attribute.
     
-    glEnableVertexAttribArray(4);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceTexSize); // this attribute comes from a different vertex buffer
+    glEnableVertexAttribArray(3);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceScale); // this attribute comes from a different vertex buffer
     glVertexAttribPointer(2, 2, GL_INT, GL_FALSE, sizeof(v2), (void*)0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glVertexAttribDivisor(3, 1); // tell OpenGL this is an instanced vertex attribute.
+    
+    glEnableVertexAttribArray(4);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceTex); // this attribute comes from a different vertex buffer
+    glVertexAttribPointer(2, 2, GL_INT, GL_FALSE, sizeof(v2), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribDivisor(4, 1); // tell OpenGL this is an instanced vertex attribute.
+    
+    glEnableVertexAttribArray(5);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceTexSize); // this attribute comes from a different vertex buffer
+    glVertexAttribPointer(2, 2, GL_INT, GL_FALSE, sizeof(v2), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribDivisor(5, 1); // tell OpenGL this is an instanced vertex attribute.
     
     
     GLuint Texture;
